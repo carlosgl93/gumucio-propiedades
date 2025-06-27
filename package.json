@@ -24,7 +24,9 @@
     "ts:check": "tsc --noEmit",
     "test:unit": "vitest src",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "deploy": "pnpm run build && firebase deploy",
+    "emulators": "firebase emulators:start "
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -32,7 +34,11 @@
     "@mui/icons-material": "^6.4.6",
     "@mui/material": "^6.4.6",
     "@toolpad/core": "^0.12.1",
+    "dotenv": "^16.6.0",
+    "firebase": "^11.9.1",
+    "firebase-tools": "^14.9.0",
     "jotai": "^2.12.1",
+    "openai": "^5.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-error-boundary": "^5.0.0",
