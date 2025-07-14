@@ -1,10 +1,10 @@
-const title = 'React PWA';
+const title = 'Gumucio Propiedades';
 
-const email = 'auther-email@gmail.com';
+const email = 'angegumucio@gmail.com';
 
-const repository = 'https://github.com/suren-atoyan/react-pwa';
+const repository = 'https://github.com/carlosgl93/gumucio-propiedades';
 
-const dateFormat = 'MMMM DD, YYYY';
+const dateFormat = 'DD, MM, YYYY';
 
 const loader = {
   // no more blinking in your app
@@ -14,7 +14,8 @@ const loader = {
 
 const defaultMetaTags = {
   image: '/cover.png',
-  description: 'Starter kit for modern web applications',
+  description:
+    'Arriendos y ventas de propiedades en Chile. Encuentra tu hogar ideal con Gumucio Propiedades.',
 };
 
 export { loader, dateFormat, repository, email, title, defaultMetaTags };

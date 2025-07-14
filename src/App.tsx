@@ -3,24 +3,26 @@ import { BrowserRouter } from 'react-router';
 
 import { CssBaseline } from '@mui/material';
 
+import { QueryClientProvider } from '@tanstack/react-query';
+
 import { withErrorHandler } from '@/error-handling';
 import AppErrorBoundaryFallback from '@/error-handling/fallbacks/App';
 
 import Pages from './routes/Pages';
-import Header from './sections/Header';
-import HotKeys from './sections/HotKeys';
 import Sidebar from './sections/Sidebar';
+import { queryClient } from './services/queryClient';
 
 function App() {
   return (
     <Fragment>
       <CssBaseline />
-      <HotKeys />
-      <BrowserRouter>
-        <Header />
-        <Sidebar />
-        <Pages />
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          {/* <Header /> */}
+          <Sidebar />
+          <Pages />
+        </BrowserRouter>
+      </QueryClientProvider>
     </Fragment>
   );
 }

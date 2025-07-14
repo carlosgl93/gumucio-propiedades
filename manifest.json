@@ -1,8 +1,8 @@
 {
-  "name": "React PWA",
-  "short_name": "reactpwa",
-  "description": "Starter kit for modern web applications",
-  "theme_color": "#ffffff",
+  "name": "Gumucio Propiedades",
+  "short_name": "Gumucio",
+  "description": "Agente inmobiliaria especializada en venta y arriendo de propiedades en Rancagua, Chile",
+  "theme_color": "#a4c4ae",
   "icons": [
     {
       "src": "pwa-192x192.png",

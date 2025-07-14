@@ -1,16 +1,16 @@
 {
-  "name": "react-pwa",
-  "version": "3.0.0",
+  "name": "gumucio-propiedades",
+  "version": "1.0.0",
   "type": "module",
-  "description": "Starter kit for modern web applications",
-  "homepage": "https://react-pwa.surenatoyan.com/",
+  "description": "Sitio web para Gumucio Propiedades - Agente inmobiliaria en Rancagua, Chile",
+  "homepage": "https://gumucio-propiedades.web.app/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/suren-atoyan/react-pwa.git"
+    "url": "https://github.com/carlosgl-93/gumucio-propiedades.git"
   },
   "bugs": {
-    "url": "https://github.com/suren-atoyan/react-pwa/issues",
-    "email": "contact@surenatoyan.com"
+    "url": "https://github.com/carlosgl-93/gumucio-propiedades/issues",
+    "email": "cgumucio93@gmail.com"
   },
   "license": "MIT",
   "scripts": {
@@ -33,6 +33,8 @@
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6.4.6",
     "@mui/material": "^6.4.6",
+    "@mui/utils": "^7.1.1",
+    "@tanstack/react-query": "^5.83.0",
     "@toolpad/core": "^0.12.1",
     "dotenv": "^16.6.0",
     "firebase": "^11.9.1",
@@ -77,9 +79,8 @@
     ]
   },
   "author": {
-    "name": "Suren Atoyan",
-    "email": "contact@surenatoyan.com",
-    "url": "http://surenatoyan.com/"
+    "name": "Carlos Gumucio",
+    "email": "cgumucio93@gmail.com"
   },
   "keywords": [
     "react",

@@ -1,16 +1,15 @@
-import { Typography } from '@mui/material';
-
+import { LoginPage } from '@/components';
 import { FullSizeCentered } from '@/components/styled';
 
-function Page2() {
+function AdminLoginPage() {
   return (
     <>
       <meta name="title" content="Page 2" />
       <FullSizeCentered>
-        <Typography variant="h3">Page 2</Typography>
+        <LoginPage />
       </FullSizeCentered>
     </>
   );
 }
 
-export default Page2;
+export default AdminLoginPage;

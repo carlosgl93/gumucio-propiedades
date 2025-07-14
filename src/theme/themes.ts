@@ -28,17 +28,25 @@ const themes: Record<ThemeMode, ThemeOptions> = {
       mode: 'light',
       background: {
         default: '#fafafa',
-        paper: '#fff',
+        paper: '#f7f6f1',
+      },
+      text: {
+        primary: '#4e4d41',
+        secondary: '#6c6b5f',
       },
     },
   }),
 
   dark: deepmerge(sharedTheme, {
     palette: {
-      mode: 'dark',
+      mode: 'light',
       background: {
-        default: '#111',
-        paper: '#171717',
+        default: '#fafafa',
+        paper: '#f7f6f1',
+      },
+      text: {
+        primary: '#4e4d41',
+        secondary: '#6c6b5f',
       },
     },
   }),
