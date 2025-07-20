@@ -24,8 +24,8 @@ const now = new Date();
 
 const user = {
   uid: 'test-user',
-  email: 'angegumucio@gmail.com',
-  password: 'AngeGumucio',
+  email: import.meta.env.VITE_TEST_USER_EMAIL,
+  password: import.meta.env.VITE_TEST_USER_PASSWORD,
 };
 
 const properties = [
