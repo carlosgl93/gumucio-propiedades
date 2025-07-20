@@ -43,6 +43,14 @@ export const useAvailableProperties = () => {
   });
 };
 
+export const useAllProperties = () => {
+  return useQuery({
+    queryKey: propertyKeys.all,
+    queryFn: () => propertyService.getAllProperties(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
 // Get featured properties
 export const useFeaturedProperties = () => {
   return useQuery({

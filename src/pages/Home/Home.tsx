@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 
 import { Box, Button, Card, CircularProgress, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 import { List } from '@/components/List';
-import { Property } from '@/models';
-import { propertyService } from '@/services/property';
+import { whatsappNumber } from '@/config';
+import { useAllProperties } from '@/hooks/useProperties';
 
 // Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
@@ -78,25 +78,8 @@ const CallToAction = styled(Typography)(({ theme }) => ({
 //
 
 function Home() {
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadProperties();
-  }, []);
-
-  const loadProperties = async () => {
-    try {
-      setLoading(true);
-      const allProps = await propertyService.getAvailableProperties();
-      setProperties(allProps);
-      // setFeaturedProperties(featured);
-    } catch (error) {
-      console.error('Error loading properties:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: allProperties, isLoading } = useAllProperties();
+  console.log('All properties:', allProperties);
 
   // Refs for scrolling
   const rentRef = useRef<HTMLDivElement>(null);
@@ -106,6 +89,13 @@ function Home() {
     if (ref.current) {
       ref.current.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleWhatsApp = () => {
+    const msg = 'Hola! Quiero vender o arrendar mi propiedad con Gumucio Propiedades.';
+    console.log('WhatsApp message:', msg);
+    const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
   };
 
   return (
@@ -196,7 +186,9 @@ function Home() {
               backgroundColor: 'background.paper',
               color: '#000000',
             }}
-            onClick={() => scrollToRef(saleRef as React.RefObject<HTMLDivElement>)}
+            onClick={() => {
+              handleWhatsApp();
+            }}
           >
             VENDE O ARRIENDA
           </Button>
@@ -214,7 +206,7 @@ function Home() {
       </HeroSection>
 
       {/* Recent Listings Section */}
-      {loading ? (
+      {isLoading ? (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
           <CircularProgress />
         </Box>
@@ -223,11 +215,14 @@ function Home() {
           <div ref={rentRef}>
             <List
               title="Arriendos Disponibles"
-              items={properties.filter((p) => p.type === 'rent')}
+              items={(allProperties || []).filter((p) => p.type === 'rent')}
             />
           </div>
           <div ref={saleRef}>
-            <List title="Ventas Disponibles" items={properties.filter((p) => p.type === 'sale')} />
+            <List
+              title="Ventas Disponibles"
+              items={(allProperties || [])?.filter((p) => p.type === 'sale')}
+            />
           </div>
         </>
       )}

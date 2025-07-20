@@ -27,11 +27,7 @@ export const List = ({ items, title }: ListProps) => {
           {items?.map((property) => (
             <Grid item xs={12} sm={6} md={4} key={property.id}>
               <PropertyCard>
-                <CardMedia
-                  component="img"
-                  image={property.images?.[0]?.thumbnailUrl}
-                  alt={property.title}
-                />
+                <CardMedia component="img" image={property.images?.[0]?.url} alt={property.title} />
                 <CardContent>
                   <Chip
                     label={property.status}

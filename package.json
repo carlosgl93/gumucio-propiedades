@@ -26,7 +26,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "deploy": "pnpm run build && firebase deploy",
-    "emulators": "firebase emulators:start "
+    "emulators": "firebase emulators:start ",
+    "seed-db": "npx tsx ./src/utils/seed-db.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -38,6 +39,7 @@
     "@toolpad/core": "^0.12.1",
     "dotenv": "^16.6.0",
     "firebase": "^11.9.1",
+    "firebase-admin": "^13.4.0",
     "firebase-tools": "^14.9.0",
     "jotai": "^2.12.1",
     "openai": "^5.8.1",

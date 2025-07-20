@@ -162,7 +162,7 @@ export const AdminDashboard = () => {
             Panel de Administración
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
-            Bienvenido, {user?.email}
+            Bienvenida, {user?.email}
           </Typography>
         </Box>
         <Box display="flex" gap={1}>
