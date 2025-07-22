@@ -1,5 +1,4 @@
 import { AdminPanelSettings, SettingsInputComponent } from '@mui/icons-material';
-import BugReportIcon from '@mui/icons-material/BugReport';
 import HomeIcon from '@mui/icons-material/Home';
 
 import asyncComponentLoader from '@/utils/loader';
@@ -10,15 +9,15 @@ const routes: Routes = [
   {
     component: asyncComponentLoader(() => import('@/pages/Home')),
     path: '/',
-    title: 'Inicio',
-    icon: HomeIcon,
-  },
-  {
-    component: asyncComponentLoader(() => import('@/pages/Home2')),
-    path: '/home',
     title: 'Gumucio Propiedades',
     icon: HomeIcon,
   },
+  // {
+  //   component: asyncComponentLoader(() => import('@/pages/Home2')),
+  //   path: '/home',
+  //   title: 'Gumucio Propiedades',
+  //   icon: HomeIcon,
+  // },
   {
     component: asyncComponentLoader(() => import('@/pages/AdminLoginPage')),
     path: '/admin/login',
@@ -32,10 +31,10 @@ const routes: Routes = [
     icon: AdminPanelSettings,
   },
   {
-    component: asyncComponentLoader(() => import('@/pages/Page4')),
-    path: '/page-4',
-    title: 'Page 4',
-    icon: BugReportIcon,
+    component: asyncComponentLoader(() => import('@/pages/Propiedades')),
+    path: '/propiedades',
+    title: 'Ventas y Arriendos',
+    // icon: BugReportIcon,
   },
   {
     component: asyncComponentLoader(() => import('@/pages/NotFound')),

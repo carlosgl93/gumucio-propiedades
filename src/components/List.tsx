@@ -30,13 +30,13 @@ export const List = ({ items, title }: ListProps) => {
                 <CardMedia component="img" image={property.images?.[0]?.url} alt={property.title} />
                 <CardContent>
                   <Chip
-                    label={property.status}
+                    label={property.status.toLocaleUpperCase()}
                     size="small"
                     sx={{
                       mb: 2,
                       fontSize: '0.7rem',
                       fontWeight: 600,
-                      backgroundColor: '#f5f5f5',
+                      // backgroundColor: '#f5f5f5',
                     }}
                   />
                   <Typography

@@ -1,3 +1,5 @@
+# Firebase Hosting cache
+.firebase/hosting.ZGlzdA.cache
 # Logs
 logs
 *.log
@@ -28,3 +30,4 @@ dist-ssr
 /blob-report/
 /playwright/.cache/
 dist
+.firebase/*

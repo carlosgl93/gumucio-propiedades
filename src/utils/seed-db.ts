@@ -24,8 +24,8 @@ const now = new Date();
 
 const user = {
   uid: 'test-user',
-  email: import.meta.env.VITE_TEST_USER_EMAIL,
-  password: import.meta.env.VITE_TEST_USER_PASSWORD,
+  email: process.env.VITE_TEST_USER_EMAIL,
+  password: process.env.VITE_TEST_USER_PASSWORD,
 };
 
 const properties = [
@@ -245,7 +245,7 @@ const properties = [
 
 async function seed() {
   console.log('Seeding properties...');
-  await createUserWithEmailAndPassword(auth, user.email, user.password);
+  await createUserWithEmailAndPassword(auth, user.email || '', user.password || '');
   console.log(`Seeded: ${user.email}`);
 
   for (const prop of properties) {

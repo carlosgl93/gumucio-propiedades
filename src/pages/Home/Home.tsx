@@ -1,11 +1,9 @@
-import { useRef } from 'react';
+import { useNavigate } from 'react-router';
 
-import { Box, Button, Card, CircularProgress, Typography } from '@mui/material';
+import { Box, Button, Card, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
-import { List } from '@/components/List';
 import { whatsappNumber } from '@/config';
-import { useAllProperties } from '@/hooks/useProperties';
 
 // Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
@@ -78,18 +76,7 @@ const CallToAction = styled(Typography)(({ theme }) => ({
 //
 
 function Home() {
-  const { data: allProperties, isLoading } = useAllProperties();
-  console.log('All properties:', allProperties);
-
-  // Refs for scrolling
-  const rentRef = useRef<HTMLDivElement>(null);
-  const saleRef = useRef<HTMLDivElement>(null);
-
-  const scrollToRef = (ref: React.RefObject<HTMLDivElement>) => {
-    if (ref.current) {
-      ref.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  const navigate = useNavigate();
 
   const handleWhatsApp = () => {
     const msg = 'Hola! Quiero vender o arrendar mi propiedad con Gumucio Propiedades.';
@@ -102,43 +89,6 @@ function Home() {
     <Box>
       {/* Hero Section */}
       <HeroSection>
-        {/* <Logo>
-          <Typography
-            variant="h4"
-            sx={{
-              fontFamily: 'serif',
-              fontWeight: 400,
-              color: 'white',
-              textAlign: 'center',
-            }}
-          >
-            🏠
-          </Typography>
-          <Typography
-            variant="h5"
-            sx={{
-              fontFamily: '"Crimson Text", serif',
-              fontWeight: 600,
-              color: 'white',
-              textAlign: 'center',
-              mt: 1,
-            }}
-          >
-            GUMUCIO
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              fontFamily: '"Crimson Text", serif',
-              color: 'white',
-              textAlign: 'center',
-              letterSpacing: '0.2em',
-            }}
-          >
-            PROPIEDADES
-          </Typography>
-        </Logo> */}
-
         <HeroContent>
           <Box
             sx={{
@@ -176,7 +126,7 @@ function Home() {
               backgroundColor: 'background.paper',
               color: '#000000',
             }}
-            onClick={() => scrollToRef(rentRef as React.RefObject<HTMLDivElement>)}
+            onClick={() => navigate('/propiedades')}
           >
             COMPRA O ARRIENDA
           </Button>
@@ -204,28 +154,6 @@ function Home() {
           </Button>
         </Box>
       </HeroSection>
-
-      {/* Recent Listings Section */}
-      {isLoading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-          <CircularProgress />
-        </Box>
-      ) : (
-        <>
-          <div ref={rentRef}>
-            <List
-              title="Arriendos Disponibles"
-              items={(allProperties || []).filter((p) => p.type === 'rent')}
-            />
-          </div>
-          <div ref={saleRef}>
-            <List
-              title="Ventas Disponibles"
-              items={(allProperties || [])?.filter((p) => p.type === 'sale')}
-            />
-          </div>
-        </>
-      )}
     </Box>
   );
 }
