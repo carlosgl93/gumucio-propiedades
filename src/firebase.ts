@@ -24,6 +24,7 @@ if (import.meta.env.MODE === 'development') {
   connectAuthEmulator(auth, 'http://localhost:9099');
   connectStorageEmulator(storage, 'localhost', 9199);
   connectFirestoreEmulator(db, 'localhost', 8081);
+  connectStorageEmulator(storage, 'localhost', 9199);
 }
 
 export { app, analytics, db, storage, auth };

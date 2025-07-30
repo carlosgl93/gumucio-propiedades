@@ -116,7 +116,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
     images: [],
     contactInfo: {
       phone: '+56 9 9783 0533',
-      email: 'angegumucio@gmail.com',
+      email: 'gumuciopropiedades@gmail.com',
       whatsapp: '+56 9 9783 0533',
     },
     isActive: true,
@@ -197,7 +197,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
     setUploadingImages(true);
 
     try {
-      const uploadPromises = Array.from(files).map(async (file) => {
+      const uploadPromises = Array.from(files).map(async (file, i) => {
         // Basic validation
         if (!file.type.startsWith('image/')) {
           throw new Error(`${file.name} no es una imagen válida`);
@@ -206,7 +206,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
           throw new Error(`${file.name} es demasiado grande (máximo 5MB)`);
         }
 
-        const tempId = `temp_${Date.now()}_${Math.random()}`;
+        const tempId = `${formData.title?.split(' ').join('_')}_${i}`;
         const result = await uploadImage.mutateAsync({
           propertyId: formData.id || tempId,
           file,
@@ -630,7 +630,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                     <TextField
                       fullWidth
                       label="Año de Construcción"
-                      value={formData.features?.yearBuilt}
+                      value={formData.features?.yearBuilt ?? ''}
                       onChange={(e) =>
                         handleNumericInputChange('features', 'yearBuilt', e.target.value)
                       }

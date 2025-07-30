@@ -9,6 +9,7 @@ import { withErrorHandler } from '@/error-handling';
 import AppErrorBoundaryFallback from '@/error-handling/fallbacks/App';
 
 import Pages from './routes/Pages';
+import Header from './sections/Header';
 import Sidebar from './sections/Sidebar';
 import { queryClient } from './services/queryClient';
 
@@ -18,7 +19,7 @@ function App() {
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          {/* <Header /> */}
+          <Header />
           <Sidebar />
           <Pages />
         </BrowserRouter>

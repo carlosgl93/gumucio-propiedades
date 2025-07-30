@@ -27,7 +27,7 @@
     "test:e2e:ui": "playwright test --ui",
     "deploy": "pnpm run build && firebase deploy",
     "emulators": "firebase emulators:start ",
-    "seed-db": "npx tsx ./src/utils/seed-db.ts"
+    "seed:db": "npx tsx ./src/utils/seed-db.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

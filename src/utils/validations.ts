@@ -17,23 +17,21 @@ export const validateProperty = (property: Partial<Property>): ValidationResult 
   // Basic Information
   if (!property.title?.trim()) {
     errors.push({ field: 'title', message: 'El título es requerido' });
-  } else if (property.title.length < 10) {
-    errors.push({ field: 'title', message: 'El título debe tener al menos 10 caracteres' });
+  } else if (property.title.length < 4) {
+    errors.push({ field: 'title', message: 'El título debe tener al menos 4 caracteres' });
   }
 
   if (!property.description?.trim()) {
     errors.push({ field: 'description', message: 'La descripción es requerida' });
-  } else if (property.description.length < 20) {
+  } else if (property.description.length < 10) {
     errors.push({
       field: 'description',
-      message: 'La descripción debe tener al menos 20 caracteres',
+      message: 'La descripción debe tener al menos 10 caracteres',
     });
   }
 
-  if (!property.price || property.price <= 0) {
-    errors.push({ field: 'price', message: 'El precio debe ser mayor a 0' });
-  } else if (property.price > 1000000000) {
-    errors.push({ field: 'price', message: 'El precio es demasiado alto' });
+  if (!property.price || property.price < 0) {
+    errors.push({ field: 'price', message: 'El precio no puede ser negativo' });
   }
 
   if (!property.currency) {
@@ -65,9 +63,9 @@ export const validateProperty = (property: Partial<Property>): ValidationResult 
     errors.push({ field: 'address.region', message: 'La región es requerida' });
   }
 
-  if (!property.address?.country?.trim()) {
-    errors.push({ field: 'address.country', message: 'El país es requerido' });
-  }
+  // if (!property.address?.country?.trim()) {
+  //   errors.push({ field: 'address.country', message: 'El país es requerido' });
+  // }
 
   // Features validation
   if (!property.features?.totalArea || property.features.totalArea <= 0) {
@@ -112,15 +110,15 @@ export const validateProperty = (property: Partial<Property>): ValidationResult 
     });
   }
 
-  if (property.features?.yearBuilt) {
-    const currentYear = new Date().getFullYear();
-    if (property.features.yearBuilt < 1800 || property.features.yearBuilt > currentYear + 2) {
-      errors.push({
-        field: 'features.yearBuilt',
-        message: `El año de construcción debe estar entre 1800 y ${currentYear + 2}`,
-      });
-    }
-  }
+  // if (property.features?.yearBuilt) {
+  //   const currentYear = new Date().getFullYear();
+  //   if (property.features.yearBuilt < 1800 || property.features.yearBuilt > currentYear + 2) {
+  //     errors.push({
+  //       field: 'features.yearBuilt',
+  //       message: `El año de construcción debe estar entre 1800 y ${currentYear + 2}`,
+  //     });
+  //   }
+  // }
 
   // Contact validation
   if (!property.contactInfo?.phone?.trim()) {

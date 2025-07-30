@@ -1,3 +1,5 @@
+import { useNavigate } from 'react-router';
+
 import { CardContent, CardMedia, Chip, Container, Divider, Grid, Typography } from '@mui/material';
 
 import { Property } from '@/models';
@@ -9,6 +11,13 @@ type ListProps = {
 };
 
 export const List = ({ items, title }: ListProps) => {
+  const navigate = useNavigate();
+  const handleGoToPropertyDetails = (propertyId: string | undefined) => {
+    // Navigate to property details page
+    if (!propertyId) return;
+    navigate(`/property/${propertyId}`);
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 8 }}>
       <SectionTitle>{title.toUpperCase()}</SectionTitle>
@@ -26,7 +35,7 @@ export const List = ({ items, title }: ListProps) => {
         <Grid container spacing={4} justifyContent="center">
           {items?.map((property) => (
             <Grid item xs={12} sm={6} md={4} key={property.id}>
-              <PropertyCard>
+              <PropertyCard onClick={() => handleGoToPropertyDetails(property.id)}>
                 <CardMedia component="img" image={property.images?.[0]?.url} alt={property.title} />
                 <CardContent>
                   <Chip

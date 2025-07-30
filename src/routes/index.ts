@@ -37,6 +37,12 @@ const routes: Routes = [
     // icon: BugReportIcon,
   },
   {
+    path: '/property/:id',
+    component: asyncComponentLoader(() => import('@/pages/PropertyDetails')),
+    title: 'Detalle Propiedad',
+    // ...other props
+  },
+  {
     component: asyncComponentLoader(() => import('@/pages/NotFound')),
     path: '*',
   },

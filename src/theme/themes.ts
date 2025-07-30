@@ -10,6 +10,13 @@ const sharedTheme = {
         disableRipple: true,
       },
     },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#92ad9e',
+        },
+      },
+    },
     MuiDivider: {
       styleOverrides: {
         vertical: {

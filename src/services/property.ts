@@ -53,6 +53,7 @@ export class PropertyService {
   async getProperty(id: string): Promise<Property | null> {
     const docRef = doc(db, this.collectionName, id);
     const docSnap = await getDoc(docRef);
+    console.log('PropertyService.getProperty', id, docSnap.exists());
 
     if (docSnap.exists()) {
       return this.formatPropertyData(docSnap.data(), docSnap.id);

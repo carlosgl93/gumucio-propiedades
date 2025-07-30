@@ -1,20 +1,14 @@
-import { Box, CircularProgress, useMediaQuery } from '@mui/material';
+import { Box, useMediaQuery } from '@mui/material';
 
 import { List } from '@/components/List';
-import { FullSizeCentered } from '@/components/styled';
+import Loading from '@/components/Loading';
 import { useAllProperties } from '@/hooks/useProperties';
 
 function Propiedades() {
   const { data: allProperties, isLoading } = useAllProperties();
   const isMobile = useMediaQuery('(max-width:600px)');
 
-  if (isLoading) {
-    return (
-      <FullSizeCentered>
-        <CircularProgress />
-      </FullSizeCentered>
-    );
-  }
+  if (isLoading) <Loading />;
 
   return (
     <>
