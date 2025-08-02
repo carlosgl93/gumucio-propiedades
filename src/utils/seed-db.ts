@@ -67,8 +67,8 @@ async function seed() {
   await createUserWithEmailAndPassword(auth, user.email || '', user.password || '');
   console.log(`Seeded: ${user.email}`);
 
-  for (let i = 0; i < 6; i++) {
-    const isRent = i < 3;
+  for (let i = 0; i < 12; i++) {
+    const isRent = i < 6;
     const propertyId = `property_${i + 1}`;
     const images = [];
     for (let j = 0; j < localImages.length; j++) {

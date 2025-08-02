@@ -1,5 +1,5 @@
 import { JSX, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 
 import {
   Bathtub,
@@ -31,6 +31,7 @@ import {
 
 import ImagesCarousel from '@/components/ImagesCarousel';
 import Loading from '@/components/Loading';
+import { email, phoneNumber, whatsappNumber } from '@/config';
 import { useProperty } from '@/hooks/useProperties';
 
 import { SectionTitle } from '../Home/Home';
@@ -84,7 +85,28 @@ const getAmenityIcon = (amenity: string) => {
 export const PropertyDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: property, isLoading, error } = useProperty(id || '');
+  console.log({ property });
+
+  const handleWhatsApp = () => {
+    const locationUrl = `${import.meta.env.VITE_PROD_URL}${location.pathname}`;
+    const msg = `Hola! me interesa esta propiedad: ${property?.title} ${locationUrl}`;
+    console.log('WhatsApp message:', msg);
+    const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+  };
+
+  const handleClickPhonecall = () => {
+    window.open(`tel:${property?.contactInfo.phone || phoneNumber}`);
+  };
+
+  const handleSendEmail = () => {
+    // handleOpenEmailClient(property.contactInfo.email);
+    window.open(
+      `mailto:${email}?subject=Consulta sobre propiedad: ${property?.title}&body=Hola, me interesa la propiedad: ${property?.address.street}, ${property?.address.commune}, ${property?.address.city}`,
+    );
+  };
 
   useEffect(() => {
     if (!id) {
@@ -129,6 +151,38 @@ export const PropertyDetails = () => {
       {/* Images Carousel */}
       <Box sx={{ mb: 4 }}>
         <ImagesCarousel images={property.images} />
+        <Box sx={{ p: 2 }}>
+          <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold', mb: 1 }}>
+            {formatPrice(property.price, property.currency)} {property.type === 'rent' && '/ mes'}
+          </Typography>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5, color: 'grey.600' }}>
+            <LocationOn sx={{ mr: 1, fontSize: 20 }} />
+            <Typography variant="body1">
+              {property.address.street}, {property.address.commune}, {property.address.city}
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+            <Button
+              variant="contained"
+              size="large"
+              fullWidth
+              sx={{
+                bgcolor: 'teal.main',
+                '&:hover': {
+                  bgcolor: 'teal.dark',
+                },
+                fontWeight: 'bold',
+                py: 1.5,
+              }}
+              onClick={handleWhatsApp}
+              startIcon={<WhatsApp />}
+            >
+              CONTACTAR POR WHATSAPP
+            </Button>
+          </Box>
+        </Box>
       </Box>
 
       <Divider sx={{ borderColor: '#000', mb: 4 }} />
@@ -137,28 +191,6 @@ export const PropertyDetails = () => {
       <Grid container spacing={4}>
         {/* Left Column - Property Details */}
         <Grid item xs={12} md={8}>
-          {/* Price and Location */}
-          <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-            <Typography
-              variant="h3"
-              component="h2"
-              sx={{ fontWeight: 'bold', mb: 2, color: 'teal.main' }}
-            >
-              {formatPrice(property.price, property.currency)} / mes
-            </Typography>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, color: 'grey.600' }}>
-              <LocationOn sx={{ mr: 1, fontSize: 24 }} />
-              <Typography variant="h6">
-                {property.address.street}, {property.address.commune}, {property.address.city}
-              </Typography>
-            </Box>
-
-            <Typography variant="body1" color="grey.600">
-              {property.address.region}, {property.address.country}
-            </Typography>
-          </Paper>
-
           {/* Description */}
           <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
             <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', mb: 2 }}>
@@ -269,7 +301,6 @@ export const PropertyDetails = () => {
             </Paper>
           )}
         </Grid>
-
         {/* Right Column - Contact and Actions */}
         <Grid item xs={12} md={4}>
           <Paper elevation={2} sx={{ p: 3, position: 'sticky', top: 20 }}>
@@ -278,7 +309,7 @@ export const PropertyDetails = () => {
             </Typography>
 
             {/* Contact Info */}
-            <Box sx={{ mb: 3 }}>
+            <Box sx={{ mb: 3 }} onClick={handleClickPhonecall}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Phone sx={{ mr: 1, color: 'teal.main' }} />
                 <Typography variant="body1">{property.contactInfo.phone}</Typography>
@@ -311,12 +342,14 @@ export const PropertyDetails = () => {
                   fontWeight: 'bold',
                   py: 1.5,
                 }}
+                onClick={handleWhatsApp}
                 startIcon={<WhatsApp />}
               >
                 CONTACTAR POR WHATSAPP
               </Button>
 
               <Button
+                onClick={handleClickPhonecall}
                 variant="outlined"
                 size="large"
                 fullWidth
@@ -336,6 +369,7 @@ export const PropertyDetails = () => {
               </Button>
 
               <Button
+                onClick={handleSendEmail}
                 variant="outlined"
                 size="large"
                 fullWidth
@@ -385,6 +419,40 @@ export const PropertyDetails = () => {
             </Box>
           </Paper>
         </Grid>
+
+        <Box
+          display={'flex'}
+          flexDirection={'column'}
+          justifyContent={'center'}
+          sx={{ mx: 'auto' }}
+        >
+          <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', mb: 2 }}>
+            Ubicación
+          </Typography>
+          <Box
+            sx={{
+              mb: 1,
+              width: '100%',
+              borderRadius: 2,
+              overflow: 'hidden',
+              boxShadow: 2,
+              mx: 'auto',
+            }}
+          >
+            <iframe
+              title="Ubicación en Google Maps"
+              width="100%"
+              height="250"
+              style={{ border: 0 }}
+              loading="lazy"
+              allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
+              src={`https://www.google.com/maps?q=${encodeURIComponent(
+                `${property.address.street}, ${property.address.commune}, ${property.address.city}, ${property.address.region}, ${property.address.country}`,
+              )}&output=embed`}
+            />
+          </Box>
+        </Box>
       </Grid>
     </Container>
   );

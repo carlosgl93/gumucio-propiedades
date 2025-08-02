@@ -1,16 +1,15 @@
 import { ProtectedRoute } from '@/components';
 import { AdminDashboard } from '@/components/AdminDashboard';
-import { FullSizeCentered } from '@/components/styled';
 
 function AdminDashboardPage() {
   return (
     <>
-      <meta name="title" content="Page 3" />
-      <FullSizeCentered>
-        <ProtectedRoute>
-          <AdminDashboard />
-        </ProtectedRoute>
-      </FullSizeCentered>
+      <meta name="Backoffice" content="Crea, edita, elimina propiedades - Gumucio Propiedades" />
+      {/* <FullSizeCentered> */}
+      <ProtectedRoute>
+        <AdminDashboard />
+      </ProtectedRoute>
+      {/* </FullSizeCentered> */}
     </>
   );
 }

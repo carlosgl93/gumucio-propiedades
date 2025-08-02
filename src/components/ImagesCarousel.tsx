@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
-import { ChevronLeft, ChevronRight, LocationOn } from '@mui/icons-material';
-import { Box, Button, IconButton, Paper, Typography } from '@mui/material';
+import { ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { Box, IconButton, Paper } from '@mui/material';
 
 import { PropertyImage } from '../models/property';
 
@@ -139,56 +139,6 @@ const ImagesCarousel = ({ images }: { images: PropertyImage[] }) => {
       </Box>
 
       {/* Property Details */}
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h3" component="h2" sx={{ fontWeight: 'bold', mb: 1 }}>
-          $2,810 / mo
-        </Typography>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, color: 'grey.600' }}>
-          <LocationOn sx={{ mr: 1, fontSize: 20 }} />
-          <Typography variant="body1">2598 Boyle Ave, Granite City, IL 62040</Typography>
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-          <Button
-            variant="contained"
-            size="large"
-            sx={{
-              bgcolor: 'teal.main',
-              '&:hover': {
-                bgcolor: 'teal.dark',
-              },
-              fontWeight: 'bold',
-              px: 3,
-            }}
-          >
-            APPLY NOW
-          </Button>
-          <Button
-            variant="outlined"
-            size="large"
-            sx={{
-              borderColor: 'grey.400',
-              color: 'grey.700',
-              '&:hover': {
-                borderColor: 'grey.500',
-                bgcolor: 'grey.50',
-              },
-              fontWeight: 'bold',
-              px: 3,
-            }}
-          >
-            REQUEST A TOUR
-          </Button>
-        </Box>
-
-        {/* Features Section */}
-        <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 2 }}>
-          <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold' }}>
-            Main Features
-          </Typography>
-        </Box>
-      </Box>
     </Paper>
   );
 };

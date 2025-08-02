@@ -10,7 +10,7 @@ import AppErrorBoundaryFallback from '@/error-handling/fallbacks/App';
 
 import Pages from './routes/Pages';
 import Header from './sections/Header';
-import Sidebar from './sections/Sidebar';
+// import Sidebar from './sections/Sidebar';
 import { queryClient } from './services/queryClient';
 
 function App() {
@@ -20,7 +20,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Header />
-          <Sidebar />
+          {/* <Sidebar /> */}
           <Pages />
         </BrowserRouter>
       </QueryClientProvider>

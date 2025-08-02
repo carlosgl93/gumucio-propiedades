@@ -145,11 +145,15 @@ export const AdminDashboard = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box
+      sx={{
+        p: 3,
+      }}
+    >
       {/* Header */}
       <Box
         display="flex"
-        justifyContent="between"
+        justifyContent="space-between"
         alignItems="center"
         mb={3}
         sx={{
@@ -264,7 +268,7 @@ export const AdminDashboard = () => {
       {/* Properties Table */}
       <Card>
         <CardContent>
-          <Box display="flex" justifyContent="between" alignItems="center" mb={2}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
             <Typography variant="h6">
               Propiedades
               {!isLoading && (

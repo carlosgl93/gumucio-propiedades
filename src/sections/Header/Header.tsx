@@ -1,15 +1,15 @@
 import { useLocation, useNavigate } from 'react-router';
 
-import MenuIcon from '@mui/icons-material/Menu';
-import { AppBar, Button, IconButton, Stack, Toolbar } from '@mui/material';
+// import MenuIcon from '@mui/icons-material/Menu';
+import { AppBar, Button, Stack, Toolbar } from '@mui/material';
 
 import { title } from '@/config';
-import { useSidebar } from '@/sections/Sidebar/hooks';
+// import { useSidebar } from '@/sections/Sidebar/hooks';
 import { useThemeMode } from '@/theme';
 
 function Header() {
   const { themeMode } = useThemeMode();
-  const { open: openSidebar } = useSidebar();
+  // const { open: openSidebar } = useSidebar();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,7 +30,7 @@ function Header() {
       <Toolbar>
         <Stack direction="row" justifyContent="space-between" alignItems="center" flex={1}>
           <Stack direction="row" gap={1} alignItems="center">
-            <IconButton
+            {/* <IconButton
               size="large"
               edge="start"
               // color="primary"
@@ -41,7 +41,7 @@ function Header() {
               onClick={openSidebar}
             >
               <MenuIcon />
-            </IconButton>
+            </IconButton> */}
             <Button
               onClick={() => navigate('/')}
               sx={{

@@ -193,11 +193,15 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
 
   const handleImageUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    if (!formData.id) {
+      alert('Primero debes crear la propiedad antes de subir imágenes.');
+      return;
+    }
 
     setUploadingImages(true);
 
     try {
-      const uploadPromises = Array.from(files).map(async (file, i) => {
+      const uploadPromises = Array.from(files).map(async (file) => {
         // Basic validation
         if (!file.type.startsWith('image/')) {
           throw new Error(`${file.name} no es una imagen válida`);
@@ -206,9 +210,8 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
           throw new Error(`${file.name} es demasiado grande (máximo 5MB)`);
         }
 
-        const tempId = `${formData.title?.split(' ').join('_')}_${i}`;
         const result = await uploadImage.mutateAsync({
-          propertyId: formData.id || tempId,
+          propertyId: formData.id!, // already checked above
           file,
           caption: `Imagen ${(formData.images?.length || 0) + 1}`,
         });
@@ -235,6 +238,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
   };
 
   const handleRemoveImage = async (imageId: string) => {
+    console.log({ imageId, formData });
     try {
       if (formData.id) {
         await deleteImage.mutateAsync({
@@ -285,7 +289,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
   return (
     <Box
       sx={{
-        height: '100vh',
+        // height: '100vh',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -735,15 +739,20 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                     multiple
                     type="file"
                     onChange={(e) => handleImageUpload(e.target.files)}
+                    disabled={!formData.id}
                   />
                   <label htmlFor="image-upload">
                     <Button
                       variant="outlined"
                       component="span"
                       startIcon={uploadingImages ? <CircularProgress size={20} /> : <CloudUpload />}
-                      disabled={uploadingImages || uploadImage.isPending}
+                      disabled={uploadingImages || uploadImage.isPending || !formData.id}
                     >
-                      {uploadingImages ? 'Subiendo...' : 'Subir Imágenes'}
+                      {uploadingImages
+                        ? 'Subiendo...'
+                        : !formData.id
+                          ? 'Guarda la propiedad antes de subir imágenes'
+                          : 'Subir Imágenes'}
                     </Button>
                   </label>
                 </Box>
