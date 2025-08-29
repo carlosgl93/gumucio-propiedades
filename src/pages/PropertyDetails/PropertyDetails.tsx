@@ -8,7 +8,6 @@ import {
   DirectionsCar,
   Email,
   FitnessCenter,
-  LocationOn,
   Phone,
   Pool,
   SquareFoot,
@@ -156,12 +155,12 @@ export const PropertyDetails = () => {
             {formatPrice(property.price, property.currency)} {property.type === 'rent' && '/ mes'}
           </Typography>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5, color: 'grey.600' }}>
+          {/* <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5, color: 'grey.600' }}>
             <LocationOn sx={{ mr: 1, fontSize: 20 }} />
             <Typography variant="body1">
               {property.address.street}, {property.address.commune}, {property.address.city}
             </Typography>
-          </Box>
+          </Box> */}
 
           <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
             <Button

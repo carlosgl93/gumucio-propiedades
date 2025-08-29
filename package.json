@@ -25,7 +25,7 @@
     "test:unit": "vitest src",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "deploy": "pnpm run build && firebase deploy",
+    "deploy": "pnpm run build && firebase deploy --only hosting && curl -X PURGE https://gumucio-pro.web.app/*",
     "emulators": "firebase emulators:start ",
     "seed:db": "npx tsx ./src/utils/seed-db.ts"
   },
