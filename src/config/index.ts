@@ -1,6 +1,6 @@
 const title = 'Gumucio Propiedades';
 
-const email = 'propiedadesgumucio@gmail.com';
+const email = 'gumuciopropiedades@gmail.com';
 
 const repository = 'https://github.com/carlosgl93/gumucio-propiedades';
 const phoneNumber = '+56 9 9783 0533';

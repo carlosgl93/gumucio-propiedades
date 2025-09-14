@@ -12,6 +12,30 @@ const routes: Routes = [
     title: 'Gumucio Propiedades',
     icon: HomeIcon,
   },
+  {
+    component: asyncComponentLoader(() => import('@/pages/Compra')),
+    path: '/compra',
+    title: 'Propiedades en Venta',
+    icon: HomeIcon,
+  },
+  {
+    component: asyncComponentLoader(() => import('@/pages/Arrienda')),
+    path: '/arrienda',
+    title: 'Propiedades en Arriendo',
+    icon: HomeIcon,
+  },
+  {
+    component: asyncComponentLoader(() => import('@/pages/Vende')),
+    path: '/vende',
+    title: 'Vende tu Propiedad',
+    icon: HomeIcon,
+  },
+  {
+    component: asyncComponentLoader(() => import('@/pages/ArriendaTuPropiedad')),
+    path: '/arrienda-tu-propiedad',
+    title: 'Arrienda tu Propiedad',
+    icon: HomeIcon,
+  },
   // {
   //   component: asyncComponentLoader(() => import('@/pages/Home2')),
   //   path: '/home',

@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router';
 import { Box, Button, Card, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
-import { whatsappNumber } from '@/config';
-
 // Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
@@ -78,13 +76,6 @@ const CallToAction = styled(Typography)(({ theme }) => ({
 function Home() {
   const navigate = useNavigate();
 
-  const handleWhatsApp = () => {
-    const msg = 'Hola! Quiero vender o arrendar mi propiedad con Gumucio Propiedades.';
-    console.log('WhatsApp message:', msg);
-    const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
-  };
-
   return (
     <Box>
       {/* Hero Section */}
@@ -107,17 +98,20 @@ function Home() {
         <Box
           sx={{
             width: '100%',
-            px: 8,
+            px: { xs: 2, sm: 4, md: 6 },
             display: 'flex',
             flexDirection: {
               xs: 'column',
               sm: 'row',
             },
-            justifyContent: 'space-between',
+            justifyContent: { xs: 'stretch', sm: 'center' },
+            alignItems: 'center',
             gap: {
               xs: 2,
-              sm: 0,
+              sm: 3,
+              md: 4,
             },
+            flexWrap: 'wrap',
           }}
         >
           <Button
@@ -125,29 +119,78 @@ function Home() {
             sx={{
               backgroundColor: 'background.paper',
               color: '#000000',
+              width: { xs: '100%', sm: 'auto' },
+              minWidth: { sm: '140px', md: '160px' },
+              maxWidth: { sm: '180px', md: '200px' },
+              fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' },
+              py: { xs: 1, sm: 1.5, md: 2 },
+              px: { xs: 2, sm: 3, md: 4 },
             }}
-            onClick={() => navigate('/propiedades')}
+            onClick={() => navigate('/compra')}
           >
-            COMPRA O ARRIENDA
+            COMPRA
           </Button>
           <Button
             variant="contained"
             sx={{
               backgroundColor: 'background.paper',
               color: '#000000',
+              width: { xs: '100%', sm: 'auto' },
+              minWidth: { sm: '140px', md: '160px' },
+              maxWidth: { sm: '180px', md: '200px' },
+              fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' },
+              py: { xs: 1, sm: 1.5, md: 2 },
+              px: { xs: 2, sm: 3, md: 4 },
             }}
-            onClick={() => {
-              handleWhatsApp();
-            }}
+            onClick={() => navigate('/arrienda')}
           >
-            VENDE O ARRIENDA
+            ARRIENDA
           </Button>
           <Button
             variant="contained"
             sx={{
               backgroundColor: 'background.paper',
               color: '#000000',
-              p: 2,
+              width: { xs: '100%', sm: 'auto' },
+              minWidth: { sm: '140px', md: '160px' },
+              maxWidth: { sm: '180px', md: '200px' },
+              fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' },
+              py: { xs: 1, sm: 1.5, md: 2 },
+              px: { xs: 2, sm: 3, md: 4 },
+            }}
+            onClick={() => navigate('/vende')}
+          >
+            VENDE
+          </Button>
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: 'background.paper',
+              color: '#000000',
+              width: { xs: '100%', sm: 'auto' },
+              minWidth: { sm: '160px', md: '180px' },
+              maxWidth: { sm: '200px', md: '220px' },
+              fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.9rem' },
+              py: { xs: 1, sm: 1.5, md: 2 },
+              px: { xs: 2, sm: 2.5, md: 3 },
+            }}
+            onClick={() => navigate('/arrienda-tu-propiedad')}
+          >
+            ARRIENDA TU PROPIEDAD
+          </Button>
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: 'background.paper',
+              color: '#000000',
+              width: { xs: '100%', sm: 'auto' },
+              minWidth: { sm: '140px', md: '160px' },
+              maxWidth: { sm: '180px', md: '200px' },
+              fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.9rem' },
+              py: { xs: 1, sm: 1.5, md: 2 },
+              px: { xs: 1, sm: 2, md: 3 },
+              textAlign: 'center',
+              lineHeight: 1.2,
             }}
           >
             RRSS {<br />} @GUMUCIOPROPIEDADES

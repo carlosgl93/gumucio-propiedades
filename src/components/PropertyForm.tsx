@@ -24,6 +24,7 @@ import {
   Typography,
 } from '@mui/material';
 
+import { email, phoneNumber } from '@/config';
 import { Property } from '@/models';
 
 import {
@@ -115,9 +116,9 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
     amenities: [],
     images: [],
     contactInfo: {
-      phone: '+56 9 9783 0533',
-      email: 'gumuciopropiedades@gmail.com',
-      whatsapp: '+56 9 9783 0533',
+      phone: phoneNumber,
+      email: email,
+      whatsapp: phoneNumber,
     },
     isActive: true,
     isFeatured: false,
