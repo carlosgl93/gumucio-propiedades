@@ -18,6 +18,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Skeleton,
   Stack,
   Switch,
   TextField,
@@ -126,6 +127,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
 
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0);
 
   // TanStack Query mutations
   const createProperty = useCreateProperty();
@@ -199,7 +201,9 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
       return;
     }
 
+    const fileCount = files.length;
     setUploadingImages(true);
+    setUploadingCount(fileCount);
 
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
@@ -235,6 +239,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
       console.error('Error uploading images:', err);
     } finally {
       setUploadingImages(false);
+      setUploadingCount(0);
     }
   };
 
@@ -750,7 +755,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                       disabled={uploadingImages || uploadImage.isPending || !formData.id}
                     >
                       {uploadingImages
-                        ? 'Subiendo...'
+                        ? `Subiendo ${uploadingCount} ${uploadingCount === 1 ? 'imagen' : 'imágenes'}...`
                         : !formData.id
                           ? 'Guarda la propiedad antes de subir imágenes'
                           : 'Subir Imágenes'}
@@ -758,52 +763,73 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                   </label>
                 </Box>
 
-                {formData.images && formData.images.length > 0 && (
-                  <Grid container spacing={2}>
-                    {formData.images.map((image, index) => (
-                      <Grid item xs={12} md={4} key={image.id}>
-                        <Box
-                          position="relative"
-                          border={1}
-                          borderColor="grey.300"
-                          borderRadius={1}
-                          overflow="hidden"
-                        >
-                          <img
-                            src={image.url}
-                            alt={image.caption || `Imagen ${index + 1}`}
-                            style={{
-                              width: '100%',
-                              height: 200,
-                              objectFit: 'cover',
-                            }}
+                <Grid container spacing={2}>
+                  {/* Skeleton loaders for uploading images */}
+                  {uploadingImages &&
+                    Array.from({ length: uploadingCount }).map((_, index) => (
+                      <Grid item xs={12} md={4} key={`skeleton-${index}`}>
+                        <Box border={1} borderColor="grey.300" borderRadius={1} overflow="hidden">
+                          <Skeleton
+                            variant="rectangular"
+                            width="100%"
+                            height={200}
+                            animation="wave"
                           />
-                          <IconButton
-                            onClick={() => handleRemoveImage(image.id)}
-                            disabled={deleteImage.isPending}
-                            sx={{
-                              position: 'absolute',
-                              top: 8,
-                              right: 8,
-                              bgcolor: 'rgba(255, 255, 255, 0.8)',
-                              '&:hover': {
-                                bgcolor: 'rgba(255, 255, 255, 0.9)',
-                              },
-                            }}
-                            size="small"
-                          >
-                            {deleteImage.isPending ? <CircularProgress size={16} /> : <Delete />}
-                          </IconButton>
                           <Box p={1} bgcolor="rgba(255, 255, 255, 0.9)">
-                            <Typography variant="caption">
-                              {image.caption || `Imagen ${index + 1}`}
-                            </Typography>
+                            <Skeleton variant="text" width="60%" animation="wave" />
                           </Box>
                         </Box>
                       </Grid>
                     ))}
-                  </Grid>
-                )}
+
+                  {/* Existing images */}
+                  {formData.images && formData.images.length > 0 && (
+                    <>
+                      {formData.images.map((image, index) => (
+                        <Grid item xs={12} md={4} key={image.id}>
+                          <Box
+                            position="relative"
+                            border={1}
+                            borderColor="grey.300"
+                            borderRadius={1}
+                            overflow="hidden"
+                          >
+                            <img
+                              src={image.url}
+                              alt={image.caption || `Imagen ${index + 1}`}
+                              style={{
+                                width: '100%',
+                                height: 200,
+                                objectFit: 'cover',
+                              }}
+                            />
+                            <IconButton
+                              onClick={() => handleRemoveImage(image.id)}
+                              disabled={deleteImage.isPending}
+                              sx={{
+                                position: 'absolute',
+                                top: 8,
+                                right: 8,
+                                bgcolor: 'rgba(255, 255, 255, 0.8)',
+                                '&:hover': {
+                                  bgcolor: 'rgba(255, 255, 255, 0.9)',
+                                },
+                              }}
+                              size="small"
+                            >
+                              {deleteImage.isPending ? <CircularProgress size={16} /> : <Delete />}
+                            </IconButton>
+                            <Box p={1} bgcolor="rgba(255, 255, 255, 0.9)">
+                              <Typography variant="caption">
+                                {image.caption || `Imagen ${index + 1}`}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Grid>
+                      ))}
+                    </>
+                  )}
+                </Grid>
               </CardContent>
             </Card>
           </Grid>

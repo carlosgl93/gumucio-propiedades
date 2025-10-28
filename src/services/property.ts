@@ -121,8 +121,20 @@ export class PropertyService {
   }
 
   async deletePropertyImage(propertyId: string, imageId: string): Promise<void> {
-    const imageRef = ref(storage, `properties/${propertyId}/images/${imageId}`);
-    await deleteObject(imageRef);
+    // List all files in the property's images folder to find the one matching the imageId
+    const imagesRef = ref(storage, `properties/${propertyId}/images`);
+    const imagesList = await listAll(imagesRef);
+
+    // Find the file that starts with the imageId (includes extension)
+    const imageToDelete = imagesList.items.find(
+      (item) => item.name.startsWith(imageId) || item.name === imageId,
+    );
+
+    if (imageToDelete) {
+      await deleteObject(imageToDelete);
+    } else {
+      console.warn(`Image with ID ${imageId} not found in storage`);
+    }
   }
 
   private async deleteAllPropertyImages(propertyId: string): Promise<void> {
