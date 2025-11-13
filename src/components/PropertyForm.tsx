@@ -247,12 +247,21 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
     console.log({ imageId, formData });
     try {
       if (formData.id) {
+        // Delete from storage
         await deleteImage.mutateAsync({
           propertyId: formData.id,
           imageId,
         });
+
+        // Update the Firestore document to remove the image from the array
+        const updatedImages = formData.images?.filter((img) => img.id !== imageId) || [];
+        await updateProperty.mutateAsync({
+          id: formData.id,
+          updates: { images: updatedImages },
+        });
       }
 
+      // Update local state
       setFormData((prev) => ({
         ...prev,
         images: prev.images?.filter((img) => img.id !== imageId) || [],

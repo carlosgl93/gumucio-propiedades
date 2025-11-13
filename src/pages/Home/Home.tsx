@@ -192,6 +192,10 @@ function Home() {
               textAlign: 'center',
               lineHeight: 1.2,
             }}
+            onClick={() => {
+              // navigate to instagram: https://www.instagram.com/gumuciopropiedades?igsh=MTJyajV2NGVpaTIxcQ==
+              window.open('https://www.instagram.com/gumuciopropiedades', '_blank');
+            }}
           >
             RRSS {<br />} @GUMUCIOPROPIEDADES
           </Button>
