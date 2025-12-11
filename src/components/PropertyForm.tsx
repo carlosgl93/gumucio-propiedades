@@ -1,7 +1,7 @@
 // components/PropertyForm.tsx
 import { useEffect, useState } from 'react';
 
-import { CloudUpload, Delete } from '@mui/icons-material';
+import { Close, CloudUpload, Delete } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -19,6 +19,7 @@ import {
   MenuItem,
   Select,
   Skeleton,
+  Snackbar,
   Stack,
   Switch,
   TextField,
@@ -128,6 +129,12 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'error' | 'warning' | 'info' | 'success';
+    persistent?: boolean;
+  }>({ open: false, message: '', severity: 'info' });
 
   // TanStack Query mutations
   const createProperty = useCreateProperty();
@@ -197,49 +204,89 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
   const handleImageUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     if (!formData.id) {
-      alert('Primero debes crear la propiedad antes de subir imágenes.');
+      setSnackbar({
+        open: true,
+        message: 'Primero debes crear la propiedad antes de subir imágenes.',
+        severity: 'warning',
+      });
       return;
     }
 
-    const fileCount = files.length;
-    setUploadingImages(true);
-    setUploadingCount(fileCount);
+    const errors: string[] = [];
+    const validFiles: File[] = [];
 
-    try {
-      const uploadPromises = Array.from(files).map(async (file) => {
-        // Basic validation
-        if (!file.type.startsWith('image/')) {
-          throw new Error(`${file.name} no es una imagen válida`);
-        }
-        if (file.size > 5 * 1024 * 1024) {
-          throw new Error(`${file.name} es demasiado grande (máximo 5MB)`);
-        }
+    // Validate all files first
+    Array.from(files).forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        errors.push(`${file.name}: no es una imagen válida`);
+      } else if (file.size > 5 * 1024 * 1024) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        errors.push(`${file.name}: demasiado grande (${sizeMB}MB, máximo 5MB)`);
+      } else {
+        validFiles.push(file);
+      }
+    });
 
-        const result = await uploadImage.mutateAsync({
-          propertyId: formData.id!, // already checked above
-          file,
-          caption: `Imagen ${(formData.images?.length || 0) + 1}`,
-        });
-        return result;
+    // Show validation errors if any
+    if (errors.length > 0) {
+      setSnackbar({
+        open: true,
+        message: `Errores en ${errors.length} ${errors.length === 1 ? 'archivo' : 'archivos'}:\n${errors.join('\n')}`,
+        severity: 'error',
+        persistent: true,
       });
 
-      const uploadedImages = await Promise.all(uploadPromises);
+      // If no valid files, return early
+      if (validFiles.length === 0) {
+        return;
+      }
+    }
 
-      setFormData((prev) => ({
-        ...prev,
-        images: [
-          ...(prev.images || []),
-          ...uploadedImages.map((img, index) => ({
-            ...img,
-            order: (prev.images?.length || 0) + index,
-          })),
-        ],
-      }));
-    } catch (err) {
-      console.error('Error uploading images:', err);
-    } finally {
-      setUploadingImages(false);
-      setUploadingCount(0);
+    // Upload only valid files
+    if (validFiles.length > 0) {
+      setUploadingImages(true);
+      setUploadingCount(validFiles.length);
+
+      try {
+        const uploadPromises = validFiles.map(async (file) => {
+          const result = await uploadImage.mutateAsync({
+            propertyId: formData.id!,
+            file,
+            caption: `Imagen ${(formData.images?.length || 0) + 1}`,
+          });
+          return result;
+        });
+
+        const uploadedImages = await Promise.all(uploadPromises);
+
+        setFormData((prev) => ({
+          ...prev,
+          images: [
+            ...(prev.images || []),
+            ...uploadedImages.map((img, index) => ({
+              ...img,
+              order: (prev.images?.length || 0) + index,
+            })),
+          ],
+        }));
+
+        setSnackbar({
+          open: true,
+          message: `${uploadedImages.length} ${uploadedImages.length === 1 ? 'imagen subida' : 'imágenes subidas'} correctamente`,
+          severity: 'success',
+        });
+      } catch (err) {
+        console.error('Error uploading images:', err);
+        setSnackbar({
+          open: true,
+          message: `Error al subir imágenes: ${err instanceof Error ? err.message : 'Error desconocido'}`,
+          severity: 'error',
+          persistent: true,
+        });
+      } finally {
+        setUploadingImages(false);
+        setUploadingCount(0);
+      }
     }
   };
 
@@ -266,8 +313,20 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
         ...prev,
         images: prev.images?.filter((img) => img.id !== imageId) || [],
       }));
+
+      setSnackbar({
+        open: true,
+        message: 'Imagen eliminada correctamente',
+        severity: 'success',
+      });
     } catch (err) {
       console.error('Error deleting image:', err);
+      setSnackbar({
+        open: true,
+        message: `Error al eliminar imagen: ${err instanceof Error ? err.message : 'Error desconocido'}`,
+        severity: 'error',
+        persistent: true,
+      });
     }
   };
 
@@ -278,6 +337,11 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
     const validation = validateProperty(formData);
     if (!validation.isValid) {
       setValidationErrors(validation.errors);
+      setSnackbar({
+        open: true,
+        message: `Por favor corrige ${validation.errors.length} ${validation.errors.length === 1 ? 'error' : 'errores'} en el formulario`,
+        severity: 'error',
+      });
       return;
     }
 
@@ -288,16 +352,32 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
           id: property.id,
           updates: formData,
         });
+        setSnackbar({
+          open: true,
+          message: 'Propiedad actualizada correctamente',
+          severity: 'success',
+        });
         onSave({ ...property, ...formData } as Property);
       } else {
         // Create new property
         const id = await createProperty.mutateAsync(
           formData as Omit<Property, 'id' | 'createdAt' | 'updatedAt'>,
         );
+        setSnackbar({
+          open: true,
+          message: 'Propiedad creada correctamente',
+          severity: 'success',
+        });
         onSave({ ...formData, id } as Property);
       }
     } catch (err) {
       console.error('Error saving property:', err);
+      setSnackbar({
+        open: true,
+        message: `Error al guardar: ${err instanceof Error ? err.message : 'Error desconocido'}`,
+        severity: 'error',
+        persistent: true,
+      });
     }
   };
 
@@ -870,6 +950,35 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
           </Button>
         </Box>
       </Box>
+
+      {/* Toast Notification */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={snackbar.persistent ? null : 6000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%', whiteSpace: 'pre-line' }}
+          action={
+            snackbar.persistent ? (
+              <IconButton
+                size="small"
+                aria-label="close"
+                color="inherit"
+                onClick={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+              >
+                <Close fontSize="small" />
+              </IconButton>
+            ) : undefined
+          }
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
