@@ -23,6 +23,7 @@ import { whatsappNumber } from '@/config';
 import { Property } from '@/models';
 
 import { SectionTitle } from '../pages/Home/Home';
+import { PropertyShareButtons } from './PropertyShareButtons';
 
 type ViewMode = 'cards' | 'list';
 
@@ -130,9 +131,13 @@ export const PropertyListView = ({
                   flexDirection: 'column',
                   cursor: 'pointer',
                   transition: 'transform 0.2s ease-in-out',
+                  position: 'relative',
                   '&:hover': {
                     transform: 'translateY(-4px)',
                     boxShadow: 3,
+                  },
+                  '&:hover .share-button': {
+                    opacity: 1,
                   },
                 }}
                 onClick={() => handlePropertyClick(property.id)}
@@ -143,6 +148,19 @@ export const PropertyListView = ({
                   image={property.images?.[0]?.url || '/placeholder-property.jpg'}
                   alt={property.title}
                 />
+                {/* Share Button - Floating on hover */}
+                <Box
+                  className="share-button"
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    opacity: { xs: 1, sm: 0 },
+                    transition: 'opacity 0.2s',
+                  }}
+                >
+                  <PropertyShareButtons property={property} variant="compact" />
+                </Box>
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
                     <Chip

@@ -4,3 +4,4 @@ export * from './Footer';
 export * from './PropertyForm';
 export * from './ImagesCarousel';
 export * from './PropertyListView';
+export * from './PropertyShareButtons';
