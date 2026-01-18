@@ -107,8 +107,7 @@ const commonAmenities = [
   'Ascensor',
   'Calefacción central',
   'Aire acondicionado',
-  'Pieza de servicio',
-  'Baño de servicio',
+  'Pieza y baño de servicio',
 ];
 
 export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) => {

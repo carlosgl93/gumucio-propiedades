@@ -30,6 +30,7 @@ import {
 
 import ImagesCarousel from '@/components/ImagesCarousel';
 import Loading from '@/components/Loading';
+import { PropertyShareButtons } from '@/components/PropertyShareButtons';
 import { email, phoneNumber, whatsappNumber } from '@/config';
 import { useProperty } from '@/hooks/useProperties';
 
@@ -386,6 +387,11 @@ export const PropertyDetails = () => {
               >
                 ENVIAR EMAIL
               </Button>
+            </Box>
+
+            {/* Share Buttons */}
+            <Box sx={{ mt: 3, pt: 3, borderTop: 1, borderColor: 'divider' }}>
+              <PropertyShareButtons property={property} variant="full" />
             </Box>
 
             {/* Property Summary */}

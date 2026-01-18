@@ -8,6 +8,7 @@ import {
   ExitToApp,
   Home,
   Refresh,
+  Share,
   Star,
   TrendingUp,
   Visibility,
@@ -42,12 +43,15 @@ import { Property } from '@/models';
 import { useAuth } from '../hooks/useAuth';
 import { useDeleteProperty, useProperties, usePropertyStats } from '../hooks/useProperties';
 import { PropertyForm } from './PropertyForm';
+import { PropertyShareButtons } from './PropertyShareButtons';
 
 export const AdminDashboard = () => {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [propertyToShare, setPropertyToShare] = useState<Property | null>(null);
 
   const { logout, user } = useAuth();
 
@@ -81,6 +85,11 @@ export const AdminDashboard = () => {
   const handleDeleteClick = (property: Property) => {
     setPropertyToDelete(property);
     setDeleteDialogOpen(true);
+  };
+
+  const handleShareClick = (property: Property) => {
+    setPropertyToShare(property);
+    setShareDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
@@ -369,6 +378,15 @@ export const AdminDashboard = () => {
                             <Edit />
                           </IconButton>
                           <IconButton
+                            onClick={() => handleShareClick(property)}
+                            size="small"
+                            color="primary"
+                            title="Compartir"
+                            disabled={deleteProperty.isPending}
+                          >
+                            <Share />
+                          </IconButton>
+                          <IconButton
                             onClick={() => handleDeleteClick(property)}
                             size="small"
                             color="error"
@@ -413,6 +431,36 @@ export const AdminDashboard = () => {
             startIcon={deleteProperty.isPending ? <CircularProgress size={16} /> : undefined}
           >
             {deleteProperty.isPending ? 'Eliminando...' : 'Eliminar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Share Dialog */}
+      <Dialog
+        open={shareDialogOpen}
+        onClose={() => setShareDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Compartir propiedad</DialogTitle>
+        <DialogContent>
+          {propertyToShare && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                {propertyToShare.title}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {propertyToShare.address.commune}, {propertyToShare.address.city}
+              </Typography>
+              <Box sx={{ mt: 3 }}>
+                <PropertyShareButtons property={propertyToShare} variant="full" />
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button sx={{ color: 'white' }} onClick={() => setShareDialogOpen(false)}>
+            Cerrar
           </Button>
         </DialogActions>
       </Dialog>
