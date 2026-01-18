@@ -10,11 +10,10 @@ import {
   WhatsappShareButton,
 } from 'react-share';
 
-import { ContentCopy, Instagram, Share } from '@mui/icons-material';
+import { ContentCopy, Share } from '@mui/icons-material';
 import {
   Box,
   Button,
-  CircularProgress,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -25,7 +24,8 @@ import {
 } from '@mui/material';
 
 import { Property } from '@/models';
-import { generateInstagramStoryImage } from '@/utils/generateInstagramImage';
+
+// import { generateInstagramStoryImage } from '@/utils/generateInstagramImage';
 
 interface PropertyShareButtonsProps {
   property: Property;
@@ -35,7 +35,7 @@ interface PropertyShareButtonsProps {
 export const PropertyShareButtons = ({ property, variant = 'full' }: PropertyShareButtonsProps) => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  // const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Generate shareable URL
@@ -81,6 +81,7 @@ ${features.join(' • ')}`;
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(propertyUrl);
+      console.log('Link copied to clipboard:', propertyUrl);
       setSnackbarMessage('¡Enlace copiado! Pégalo en Instagram Stories');
       setSnackbarOpen(true);
     } catch (error) {
@@ -90,31 +91,31 @@ ${features.join(' • ')}`;
     }
   };
 
-  const handleInstagramShare = async () => {
-    setIsGeneratingImage(true);
-    try {
-      const imageBlob = await generateInstagramStoryImage(property);
+  // const handleInstagramShare = async () => {
+  //   setIsGeneratingImage(true);
+  //   try {
+  //     const imageBlob = await generateInstagramStoryImage(property);
 
-      // Create download link
-      const url = URL.createObjectURL(imageBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `propiedad-${property.id}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+  //     // Create download link
+  //     const url = URL.createObjectURL(imageBlob);
+  //     const link = document.createElement('a');
+  //     link.href = url;
+  //     link.download = `propiedad-${property.id}.jpg`;
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+  //     URL.revokeObjectURL(url);
 
-      setSnackbarMessage('Imagen descargada. Abre Instagram y súbela a tus historias');
-      setSnackbarOpen(true);
-    } catch (error) {
-      console.error('Error generating Instagram image:', error);
-      setSnackbarMessage('Error al generar la imagen para Instagram');
-      setSnackbarOpen(true);
-    } finally {
-      setIsGeneratingImage(false);
-    }
-  };
+  //     setSnackbarMessage('Imagen descargada. Abre Instagram y súbela a tus historias');
+  //     setSnackbarOpen(true);
+  //   } catch (error) {
+  //     console.error('Error generating Instagram image:', error);
+  //     setSnackbarMessage('Error al generar la imagen para Instagram');
+  //     setSnackbarOpen(true);
+  //   } finally {
+  //     setIsGeneratingImage(false);
+  //   }
+  // };
 
   const handleNativeShare = async () => {
     if (navigator.share) {
@@ -156,7 +157,7 @@ ${features.join(' • ')}`;
         </IconButton>
 
         <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth>
-          <DialogTitle>Compartir Propiedad</DialogTitle>
+          <DialogTitle>Compartir propiedad</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
               {/* WhatsApp */}
@@ -200,7 +201,7 @@ ${features.join(' • ')}`;
               </Box>
 
               {/* Instagram */}
-              <Button
+              {/* <Button
                 variant="outlined"
                 startIcon={isGeneratingImage ? <CircularProgress size={20} /> : <Instagram />}
                 onClick={(e) => {
@@ -218,7 +219,7 @@ ${features.join(' • ')}`;
                 }}
               >
                 {isGeneratingImage ? 'Generando...' : 'Instagram Stories'}
-              </Button>
+              </Button> */}
 
               {/* Copy Link */}
               <Button
@@ -230,7 +231,7 @@ ${features.join(' • ')}`;
                 }}
                 sx={{
                   borderColor: 'grey.400',
-                  color: 'grey.700',
+                  color: 'white',
                 }}
               >
                 Copiar Enlace
@@ -244,7 +245,7 @@ ${features.join(' • ')}`;
           autoHideDuration={4000}
           onClose={() => setSnackbarOpen(false)}
           message={snackbarMessage}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         />
       </>
     );
@@ -262,8 +263,8 @@ ${features.join(' • ')}`;
           startIcon={<Share />}
           onClick={handleNativeShare}
           sx={{
-            borderColor: 'teal.main',
-            color: 'teal.main',
+            color: 'white',
+            borderColor: 'white',
             '&:hover': {
               borderColor: 'teal.dark',
               bgcolor: 'teal.50',
@@ -272,7 +273,7 @@ ${features.join(' • ')}`;
             py: 1.5,
           }}
         >
-          COMPARTIR
+          Compartir
         </Button>
       </Box>
 
@@ -304,7 +305,7 @@ ${features.join(' • ')}`;
           </LinkedinShareButton>
 
           {/* Instagram */}
-          <IconButton
+          {/* <IconButton
             onClick={handleInstagramShare}
             disabled={isGeneratingImage}
             sx={{
@@ -322,7 +323,7 @@ ${features.join(' • ')}`;
             title="Instagram Stories"
           >
             {isGeneratingImage ? <CircularProgress size={20} color="inherit" /> : <Instagram />}
-          </IconButton>
+          </IconButton> */}
 
           {/* Copy Link */}
           <IconButton

@@ -442,7 +442,7 @@ export const AdminDashboard = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Compartir Propiedad</DialogTitle>
+        <DialogTitle>Compartir propiedad</DialogTitle>
         <DialogContent>
           {propertyToShare && (
             <Box>
@@ -459,7 +459,9 @@ export const AdminDashboard = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShareDialogOpen(false)}>Cerrar</Button>
+          <Button sx={{ color: 'white' }} onClick={() => setShareDialogOpen(false)}>
+            Cerrar
+          </Button>
         </DialogActions>
       </Dialog>
 
