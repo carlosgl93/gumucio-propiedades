@@ -1,7 +1,7 @@
 // components/PropertyForm.tsx
 import { useEffect, useState } from 'react';
 
-import { Close, CloudUpload, Delete } from '@mui/icons-material';
+import { Close, CloudUpload, Delete, DragIndicator } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -25,6 +25,24 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import { email, phoneNumber } from '@/config';
 import { Property } from '@/models';
@@ -137,6 +155,8 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
     severity: 'error' | 'warning' | 'info' | 'success';
     persistent?: boolean;
   }>({ open: false, message: '', severity: 'info' });
+  const [isReordering, setIsReordering] = useState(false);
+  const [reorderError, setReorderError] = useState<string | null>(null);
 
   // TanStack Query mutations
   const createProperty = useCreateProperty();
@@ -146,6 +166,14 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
 
   const isLoading = createProperty.isPending || updateProperty.isPending;
   const error = createProperty.error || updateProperty.error;
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   useEffect(() => {
     if (property) {
@@ -329,6 +357,64 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
         severity: 'error',
         persistent: true,
       });
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = formData.images?.findIndex((img) => img.id === active.id) ?? -1;
+      const newIndex = formData.images?.findIndex((img) => img.id === over.id) ?? -1;
+
+      if (oldIndex !== -1 && newIndex !== -1 && formData.images) {
+        const reorderedImages = arrayMove(formData.images, oldIndex, newIndex).map(
+          (img, index) => ({
+            ...img,
+            order: index,
+          }),
+        );
+
+        // Optimistically update UI
+        setFormData((prev) => ({
+          ...prev,
+          images: reorderedImages,
+        }));
+
+        // Save to Firestore
+        handleReorderImages(reorderedImages);
+      }
+    }
+  };
+
+  const handleReorderImages = async (reorderedImages: Property['images']) => {
+    if (!formData.id) return;
+
+    setIsReordering(true);
+    setReorderError(null);
+
+    try {
+      await updateProperty.mutateAsync({
+        id: formData.id,
+        updates: { images: reorderedImages },
+      });
+
+      setSnackbar({
+        open: true,
+        message: 'Orden de imágenes actualizado',
+        severity: 'success',
+      });
+    } catch (err) {
+      console.error('Error reordering images:', err);
+      setReorderError(err instanceof Error ? err.message : 'Error al reordenar imágenes');
+    } finally {
+      setIsReordering(false);
+    }
+  };
+
+  const handleRetryReorder = () => {
+    if (formData.images) {
+      handleReorderImages(formData.images);
     }
   };
 
@@ -854,73 +940,81 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                   </label>
                 </Box>
 
-                <Grid container spacing={2}>
-                  {/* Skeleton loaders for uploading images */}
-                  {uploadingImages &&
-                    Array.from({ length: uploadingCount }).map((_, index) => (
-                      <Grid item xs={12} md={4} key={`skeleton-${index}`}>
-                        <Box border={1} borderColor="grey.300" borderRadius={1} overflow="hidden">
-                          <Skeleton
-                            variant="rectangular"
-                            width="100%"
-                            height={200}
-                            animation="wave"
-                          />
-                          <Box p={1} bgcolor="rgba(255, 255, 255, 0.9)">
-                            <Skeleton variant="text" width="60%" animation="wave" />
-                          </Box>
-                        </Box>
-                      </Grid>
-                    ))}
+                {/* Loading state */}
+                {isReordering && (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <CircularProgress size={16} />
+                      <Typography variant="body2">Guardando nuevo orden...</Typography>
+                    </Box>
+                  </Alert>
+                )}
 
-                  {/* Existing images */}
-                  {formData.images && formData.images.length > 0 && (
-                    <>
-                      {formData.images.map((image, index) => (
-                        <Grid item xs={12} md={4} key={image.id}>
-                          <Box
-                            position="relative"
-                            border={1}
-                            borderColor="grey.300"
-                            borderRadius={1}
-                            overflow="hidden"
-                          >
-                            <img
-                              src={image.url}
-                              alt={image.caption || `Imagen ${index + 1}`}
-                              style={{
-                                width: '100%',
-                                height: 200,
-                                objectFit: 'cover',
-                              }}
-                            />
-                            <IconButton
-                              onClick={() => handleRemoveImage(image.id)}
-                              disabled={deleteImage.isPending}
-                              sx={{
-                                position: 'absolute',
-                                top: 8,
-                                right: 8,
-                                bgcolor: 'rgba(255, 255, 255, 0.8)',
-                                '&:hover': {
-                                  bgcolor: 'rgba(255, 255, 255, 0.9)',
-                                },
-                              }}
-                              size="small"
+                {/* Error state with retry */}
+                {reorderError && (
+                  <Alert
+                    severity="error"
+                    sx={{ mb: 2 }}
+                    action={
+                      <Button color="inherit" size="small" onClick={handleRetryReorder}>
+                        Reintentar
+                      </Button>
+                    }
+                  >
+                    {reorderError}
+                  </Alert>
+                )}
+
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={formData.images?.map((img) => img.id) || []}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <Grid container spacing={2}>
+                      {/* Skeleton loaders for uploading images */}
+                      {uploadingImages &&
+                        Array.from({ length: uploadingCount }).map((_, index) => (
+                          <Grid item xs={12} md={4} key={`skeleton-${index}`}>
+                            <Box
+                              border={1}
+                              borderColor="grey.300"
+                              borderRadius={1}
+                              overflow="hidden"
                             >
-                              {deleteImage.isPending ? <CircularProgress size={16} /> : <Delete />}
-                            </IconButton>
-                            <Box p={1} bgcolor="rgba(255, 255, 255, 0.9)">
-                              <Typography variant="caption">
-                                {image.caption || `Imagen ${index + 1}`}
-                              </Typography>
+                              <Skeleton
+                                variant="rectangular"
+                                width="100%"
+                                height={200}
+                                animation="wave"
+                              />
+                              <Box p={1} bgcolor="rgba(255, 255, 255, 0.9)">
+                                <Skeleton variant="text" width="60%" animation="wave" />
+                              </Box>
                             </Box>
-                          </Box>
-                        </Grid>
-                      ))}
-                    </>
-                  )}
-                </Grid>
+                          </Grid>
+                        ))}
+
+                      {/* Existing images */}
+                      {formData.images && formData.images.length > 0 && (
+                        <>
+                          {formData.images.map((image, index) => (
+                            <SortableImageItem
+                              key={image.id}
+                              image={image}
+                              index={index}
+                              onRemove={handleRemoveImage}
+                              isDeleting={deleteImage.isPending}
+                            />
+                          ))}
+                        </>
+                      )}
+                    </Grid>
+                  </SortableContext>
+                </DndContext>
               </CardContent>
             </Card>
           </Grid>
@@ -982,5 +1076,100 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
         </Alert>
       </Snackbar>
     </Box>
+  );
+};
+
+// Sortable Image Item Component
+interface SortableImageItemProps {
+  image: Property['images'][0];
+  index: number;
+  onRemove: (imageId: string) => void;
+  isDeleting: boolean;
+}
+
+const SortableImageItem = ({ image, index, onRemove, isDeleting }: SortableImageItemProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: image.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Grid item xs={12} md={4} ref={setNodeRef} style={style}>
+      <Box
+        position="relative"
+        border={2}
+        borderColor={isDragging ? 'primary.main' : 'grey.300'}
+        borderRadius={1}
+        overflow="hidden"
+        sx={{
+          cursor: isDragging ? 'grabbing' : 'grab',
+          '&:hover .drag-handle': {
+            opacity: 1,
+          },
+        }}
+      >
+        {/* Drag Handle */}
+        <Box
+          className="drag-handle"
+          {...attributes}
+          {...listeners}
+          sx={{
+            position: 'absolute',
+            top: 8,
+            left: 8,
+            bgcolor: 'rgba(255, 255, 255, 0.9)',
+            borderRadius: 1,
+            p: 0.5,
+            cursor: 'grab',
+            opacity: 0.7,
+            transition: 'opacity 0.2s',
+            zIndex: 1,
+            '&:active': {
+              cursor: 'grabbing',
+            },
+          }}
+        >
+          <DragIndicator fontSize="small" />
+        </Box>
+
+        <img
+          src={image.url}
+          alt={image.caption || `Imagen ${index + 1}`}
+          style={{
+            width: '100%',
+            height: 200,
+            objectFit: 'cover',
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Delete Button */}
+        <IconButton
+          onClick={() => onRemove(image.id)}
+          disabled={isDeleting}
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            bgcolor: 'rgba(255, 255, 255, 0.8)',
+            '&:hover': {
+              bgcolor: 'rgba(255, 255, 255, 0.9)',
+            },
+          }}
+          size="small"
+        >
+          {isDeleting ? <CircularProgress size={16} /> : <Delete />}
+        </IconButton>
+
+        <Box p={1} bgcolor="rgba(255, 255, 255, 0.9)">
+          <Typography variant="caption">{image.caption || `Imagen ${index + 1}`}</Typography>
+        </Box>
+      </Box>
+    </Grid>
   );
 };
