@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Description, Science } from '@mui/icons-material';
 import {
@@ -220,21 +220,21 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
     }
   };
 
-  const loadFixture = () => {
+  const loadFixture = useCallback(() => {
     const fixture = getVisitOrderFixture('default');
     setFormData(fixture);
     setErrors({});
-  };
+  }, []);
 
   // Auto-fill form with fixture data when dialog opens in development
   useEffect(() => {
     if (open && fixturesEnabled && property) {
       loadFixture();
     }
-  }, [open, property]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, fixturesEnabled, property, loadFixture]);
 
-  // Get minimum date (today)
-  const today = new Date().toISOString().split('T')[0];
+  // Get minimum date (today) - memoized to avoid recalculation on every render
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -261,7 +261,7 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
           <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
             <strong>Propiedad:</strong> {property.title}
             <br />
-            <strong>Dirección:</strong> {property.address.street}, {property.address.commune}
+            <strong>Dirección:</strong> {property.address?.street || 'N/A'}, {property.address?.commune || 'N/A'}
           </Box>
         )}
 

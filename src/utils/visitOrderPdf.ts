@@ -26,6 +26,17 @@ const sanitizeFilename = (text: string): string => {
 };
 
 /**
+ * Format date as DD-MM-YYYY
+ */
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
+/**
  * Generate a unique order number based on timestamp
  */
 const generateOrderNumber = (): string => {
@@ -44,8 +55,8 @@ export const generateVisitOrderPDF = async (
 ): Promise<void> => {
   const doc = new jsPDF();
   const orderNumber = generateOrderNumber();
-  const emissionDate = new Date().toLocaleDateString('es-CL');
-  const visitDateFormatted = new Date(visitData.visitDate).toLocaleDateString('es-CL');
+  const emissionDate = formatDate(new Date().toISOString());
+  const visitDateFormatted = formatDate(visitData.visitDate);
 
   // Set font
   doc.setFont('helvetica');
@@ -91,21 +102,25 @@ export const generateVisitOrderPDF = async (
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Propiedad: ${property.title}`, 20, yPosition);
+  doc.text(`Propiedad: ${property.title || 'N/A'}`, 20, yPosition);
   yPosition += 6;
+
+  const street = property.address?.street || 'N/A';
+  const commune = property.address?.commune || 'N/A';
+  const city = property.address?.city || 'N/A';
   doc.text(
-    `Dirección: ${property.address.street}, ${property.address.commune}, ${property.address.city}`,
+    `Dirección: ${street}, ${commune}, ${city}`,
     20,
     yPosition,
   );
   yPosition += 6;
-  doc.text(`Tipo: ${property.propertyType}`, 20, yPosition);
+  doc.text(`Tipo: ${property.propertyType || 'N/A'}`, 20, yPosition);
   yPosition += 6;
   doc.text(`Código Interno: ${property.id || 'N/A'}`, 20, yPosition);
   yPosition += 6;
-  doc.text(`Estado: ${property.status}`, 20, yPosition);
+  doc.text(`Estado: ${property.status || 'N/A'}`, 20, yPosition);
   yPosition += 6;
-  doc.text(`Precio: ${property.price.toLocaleString()} ${property.currency}`, 20, yPosition);
+  doc.text(`Precio: ${property.price?.toLocaleString() || 'N/A'} ${property.currency || ''}`, 20, yPosition);
   yPosition += 10;
 
   // Section: Visitor Data
@@ -210,8 +225,10 @@ export const generateVisitOrderPDF = async (
       align: 'center',
     },
   );
+  const contactPhone = property.contactInfo?.phone || 'N/A';
+  const contactEmail = property.contactInfo?.email || 'N/A';
   doc.text(
-    `Contacto: ${property.contactInfo.phone} | ${property.contactInfo.email}`,
+    `Contacto: ${contactPhone} | ${contactEmail}`,
     105,
     pageHeight - 10,
     { align: 'center' },
@@ -224,8 +241,9 @@ export const generateVisitOrderPDF = async (
   );
 
   // Save PDF with format: OV_{address}_{date}.pdf
-  const addressForFilename = sanitizeFilename(property.address.street);
-  const dateForFilename = visitData.visitDate.replace(/-/g, ''); // YYYYMMDD format
+  const addressForFilename = sanitizeFilename(property.address?.street || 'Propiedad');
+  // Convert YYYY-MM-DD to DDMMYYYY for filename
+  const dateForFilename = formatDate(visitData.visitDate).replace(/-/g, ''); // DDMMYYYY format
 
   doc.save(`OV_${addressForFilename}_${dateForFilename}.pdf`);
 };

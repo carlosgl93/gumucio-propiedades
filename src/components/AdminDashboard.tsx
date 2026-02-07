@@ -1,5 +1,5 @@
 // components/AdminDashboard.tsx
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   Add,
@@ -156,18 +156,20 @@ export const AdminDashboard = () => {
     return `${formatter.format(price)} ${currency}`;
   };
 
-  // Filter properties based on search query
-  const filteredProperties = properties.filter((property) => {
-    if (!searchQuery.trim()) return true;
+  // Filter properties based on search query - memoized for performance
+  const filteredProperties = useMemo(() => {
+    return properties.filter((property) => {
+      if (!searchQuery.trim()) return true;
 
-    const query = searchQuery.toLowerCase();
-    return (
-      property.title.toLowerCase().includes(query) ||
-      property.address.street.toLowerCase().includes(query) ||
-      property.address.commune.toLowerCase().includes(query) ||
-      property.address.city.toLowerCase().includes(query)
-    );
-  });
+      const query = searchQuery.toLowerCase();
+      return (
+        property.title?.toLowerCase().includes(query) ||
+        property.address?.street?.toLowerCase().includes(query) ||
+        property.address?.commune?.toLowerCase().includes(query) ||
+        property.address?.city?.toLowerCase().includes(query)
+      );
+    });
+  }, [properties, searchQuery]);
 
   if (showForm) {
     return (
