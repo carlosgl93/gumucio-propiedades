@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { Description } from '@mui/icons-material';
+import { Description, Science } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -15,9 +15,12 @@ import {
   Radio,
   RadioGroup,
   TextField,
+  Tooltip,
 } from '@mui/material';
 import { jsPDF } from 'jspdf';
 
+import { getVisitOrderFixture } from '@/fixtures/visitOrder';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 import { Property } from '@/models';
 
 interface VisitOrderDialogProps {
@@ -116,6 +119,7 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
+  const fixturesEnabled = useFeatureFlag('fixtures');
 
   const handleChange = (field: keyof VisitFormData, value: string) => {
     let formattedValue = value;
@@ -175,7 +179,7 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
     return Object.keys(newErrors).length === 0;
   };
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     if (!property) return;
 
     const doc = new jsPDF();
@@ -185,6 +189,20 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
 
     // Set font
     doc.setFont('helvetica');
+
+    // Add logo to top right corner (square aspect ratio)
+    try {
+      const logoImg = new Image();
+      logoImg.src = '/propiedades-gumucio-logo.png';
+      await new Promise((resolve, reject) => {
+        logoImg.onload = resolve;
+        logoImg.onerror = reject;
+      });
+      // Add logo at top right with square aspect ratio (20x20mm)
+      doc.addImage(logoImg, 'PNG', 170, 10, 20, 20);
+    } catch (error) {
+      console.warn('Could not load logo:', error);
+    }
 
     // Header
     doc.setFontSize(18);
@@ -205,10 +223,10 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
 
     let yPosition = 55;
 
-    // Section 2: Property Data
+    // Section: Property Data
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('2. DATOS DE LA PROPIEDAD', 20, yPosition);
+    doc.text('DATOS DE LA PROPIEDAD', 20, yPosition);
     yPosition += 8;
 
     doc.setFontSize(10);
@@ -230,10 +248,10 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
     doc.text(`Precio: ${property.price.toLocaleString()} ${property.currency}`, 20, yPosition);
     yPosition += 10;
 
-    // Section 3: Visitor Data
+    // Section: Visitor Data
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('3. DATOS DEL VISITANTE', 20, yPosition);
+    doc.text('DATOS DEL VISITANTE', 20, yPosition);
     yPosition += 8;
 
     doc.setFontSize(10);
@@ -247,10 +265,10 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
     doc.text(`Email: ${formData.visitorEmail || 'N/A'}`, 20, yPosition);
     yPosition += 10;
 
-    // Section 4: Visit Data
+    // Section: Visit Data
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('4. DATOS DE LA VISITA', 20, yPosition);
+    doc.text('DATOS DE LA VISITA', 20, yPosition);
     yPosition += 8;
 
     doc.setFontSize(10);
@@ -267,20 +285,13 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
       segunda: 'Segunda visita',
       tasacion: 'Tasación',
     };
-    doc.text(
-      `Tipo de visita: ${visitTypeLabels[formData.visitType]} ☑  ${Object.entries(visitTypeLabels)
-        .filter(([key]) => key !== formData.visitType)
-        .map(([, label]) => `${label} ☐`)
-        .join('  ')}`,
-      20,
-      yPosition,
-    );
+    doc.text(`Tipo de visita: ${visitTypeLabels[formData.visitType]}`, 20, yPosition);
     yPosition += 10;
 
-    // Section 5: Terms and Conditions
+    // Section: Terms and Conditions
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('5. TÉRMINOS Y CONDICIONES', 20, yPosition);
+    doc.text('TÉRMINOS Y CONDICIONES', 20, yPosition);
     yPosition += 8;
 
     doc.setFontSize(9);
@@ -304,24 +315,28 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
 
     yPosition += 5;
 
-    // Section 6: Signature
+    // Section: Signature (centered)
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('6. SECCIÓN DE FIRMA', 20, yPosition);
+    doc.text('SECCIÓN DE FIRMA', 105, yPosition, { align: 'center' });
     yPosition += 8;
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.text(
       'Por la presente, declaro haber leído y aceptado las condiciones establecidas.',
-      20,
+      105,
       yPosition,
+      { align: 'center' },
     );
     yPosition += 15;
 
-    doc.line(20, yPosition, 100, yPosition);
+    // Signature line centered
+    const signatureLineStart = 70;
+    const signatureLineEnd = 140;
+    doc.line(signatureLineStart, yPosition, signatureLineEnd, yPosition);
     yPosition += 5;
-    doc.text('Firma del Visitante', 20, yPosition);
+    doc.text('Firma del Visitante', 105, yPosition, { align: 'center' });
 
     // Footer
     const pageHeight = doc.internal.pageSize.height;
@@ -347,12 +362,12 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
     doc.save(`Orden_Visita_${property.id}_${orderNumber}.pdf`);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
 
     setIsGenerating(true);
     try {
-      generatePDF();
+      await generatePDF();
       // Reset form after successful generation
       setFormData({
         visitorName: '',
@@ -387,12 +402,42 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
     }
   };
 
+  const loadFixture = () => {
+    const fixture = getVisitOrderFixture('default');
+    setFormData(fixture);
+    setErrors({});
+  };
+
+  // Auto-fill form with fixture data when dialog opens in development
+  useEffect(() => {
+    if (open && fixturesEnabled && property) {
+      loadFixture();
+    }
+  }, [open, property]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Get minimum date (today)
   const today = new Date().toISOString().split('T')[0];
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Generar Orden de Visita</DialogTitle>
+      <DialogTitle>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Generar Orden de Visita</span>
+          {fixturesEnabled && (
+            <Tooltip title="Cargar datos de prueba">
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<Science />}
+                onClick={loadFixture}
+                sx={{ ml: 2 }}
+              >
+                Test Data
+              </Button>
+            </Tooltip>
+          )}
+        </Box>
+      </DialogTitle>
       <DialogContent>
         {property && (
           <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
