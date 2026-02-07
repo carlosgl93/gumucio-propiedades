@@ -358,8 +358,20 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
       { align: 'center' },
     );
 
-    // Save PDF
-    doc.save(`Orden_Visita_${property.id}_${orderNumber}.pdf`);
+    // Save PDF with format: OV_{address}_{date}.pdf
+    const sanitizeFilename = (text: string) => {
+      return text
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '_') // Replace spaces with underscores
+        .substring(0, 50); // Limit length
+    };
+
+    const addressForFilename = sanitizeFilename(property.address.street);
+    const dateForFilename = formData.visitDate.replace(/-/g, ''); // YYYYMMDD format
+
+    doc.save(`OV_${addressForFilename}_${dateForFilename}.pdf`);
   };
 
   const handleSubmit = async () => {
