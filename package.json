@@ -45,6 +45,7 @@
     "firebase-admin": "^13.4.0",
     "firebase-tools": "^14.9.0",
     "jotai": "^2.12.1",
+    "jspdf": "^4.1.0",
     "openai": "^5.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
