@@ -1,15 +1,13 @@
 import { jsPDF } from 'jspdf';
+import QRCode from 'qrcode';
 
+import { PDF_CONFIG } from '@/config/pdfConfig';
 import { Property } from '@/models';
+
+import { formatPriceWithConversion } from './currencyConverter';
 
 interface VisitOrderData {
   visitorName: string;
-  visitorRut: string;
-  visitorPhone: string;
-  visitorEmail: string;
-  visitDate: string;
-  visitTime: string;
-  visitType: 'primera' | 'segunda' | 'tasacion';
 }
 
 /**
@@ -37,16 +35,56 @@ const formatDate = (dateString: string): string => {
 };
 
 /**
- * Generate a unique order number based on timestamp
+ * Add days to a date
  */
-const generateOrderNumber = (): string => {
-  return `ORD-${Date.now()}`;
+const addDays = (date: Date, days: number): Date => {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+};
+
+/**
+ * Get property type label in Spanish
+ */
+const getPropertyTypeLabel = (property: Property): string => {
+  const typeMap: Record<string, string> = {
+    casa: 'Casa',
+    departamento: 'Departamento',
+    oficina: 'Oficina',
+    terreno: 'Terreno',
+    comercial: 'Local Comercial',
+  };
+
+  const transactionType = property.type === 'sale' ? 'Venta' : 'Arriendo';
+  const propertyType = typeMap[property.propertyType || ''] || 'Propiedad';
+
+  return `${transactionType} en ${propertyType}`;
+};
+
+/**
+ * Load image as data URL
+ */
+const loadImageAsDataURL = (url: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/jpeg'));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
 };
 
 /**
  * Generate a PDF for a property visit order
  * @param property - The property for the visit
- * @param visitData - The visitor and visit information
+ * @param visitData - The visitor information
  * @returns Promise that resolves when PDF is generated and downloaded
  */
 export const generateVisitOrderPDF = async (
@@ -54,14 +92,18 @@ export const generateVisitOrderPDF = async (
   visitData: VisitOrderData,
 ): Promise<void> => {
   const doc = new jsPDF();
-  const orderNumber = generateOrderNumber();
-  const emissionDate = formatDate(new Date().toISOString());
-  const visitDateFormatted = formatDate(visitData.visitDate);
+  const currentDate = new Date();
+  const emissionDate = formatDate(currentDate.toISOString());
+  const maxVisitDate = formatDate(addDays(currentDate, 7).toISOString());
 
   // Set font
   doc.setFont('helvetica');
 
-  // Add logo to top right corner (square aspect ratio)
+  // ========================================
+  // HEADER SECTION
+  // ========================================
+
+  // Add logo to top right corner (4:3 aspect ratio)
   try {
     const logoImg = new Image();
     logoImg.src = '/propiedades-gumucio-logo.png';
@@ -69,181 +111,246 @@ export const generateVisitOrderPDF = async (
       logoImg.onload = resolve;
       logoImg.onerror = reject;
     });
-    // Add logo at top right with square aspect ratio (20x20mm)
-    doc.addImage(logoImg, 'PNG', 170, 10, 20, 20);
+    // Add logo at top right with 4:3 aspect ratio (20x15mm)
+    doc.addImage(logoImg, 'PNG', 170, 10, 20, 15);
   } catch (error) {
     console.warn('Could not load logo:', error);
   }
 
-  // Header
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.text('GUMUCIO PROPIEDADES', 105, 20, { align: 'center' });
-
-  doc.setFontSize(14);
-  doc.text('Orden de Visita a Propiedad', 105, 28, { align: 'center' });
-
-  doc.setFontSize(10);
+  // Top-right: Dates
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text(`N° ${orderNumber}`, 105, 35, { align: 'center' });
-  doc.text(`Fecha de emisión: ${emissionDate}`, 105, 40, { align: 'center' });
+  doc.text(`Emitida: ${emissionDate}`, 190, 28, { align: 'right' });
+  doc.text(`Plazo máximo para la visita: ${maxVisitDate}`, 190, 32, { align: 'right' });
+
+  // Title
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Orden de Visita', 105, 20, { align: 'center' });
 
   // Line separator
-  doc.setLineWidth(0.5);
-  doc.line(20, 45, 190, 45);
+  doc.setLineWidth(0.3);
+  doc.line(20, 30, 190, 30);
 
-  let yPosition = 55;
+  // ========================================
+  // INFO ROW (Cliente, Propiedad, Fecha)
+  // ========================================
 
-  // Section: Property Data
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('DATOS DE LA PROPIEDAD', 20, yPosition);
-  yPosition += 8;
-
-  doc.setFontSize(10);
+  let yPos = 36;
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Propiedad: ${property.title || 'N/A'}`, 20, yPosition);
-  yPosition += 6;
 
-  const street = property.address?.street || 'N/A';
-  const commune = property.address?.commune || 'N/A';
-  const city = property.address?.city || 'N/A';
-  doc.text(
-    `Dirección: ${street}, ${commune}, ${city}`,
-    20,
-    yPosition,
-  );
-  yPosition += 6;
-  doc.text(`Tipo: ${property.propertyType || 'N/A'}`, 20, yPosition);
-  yPosition += 6;
-  doc.text(`Código Interno: ${property.id || 'N/A'}`, 20, yPosition);
-  yPosition += 6;
-  doc.text(`Estado: ${property.status || 'N/A'}`, 20, yPosition);
-  yPosition += 6;
-  doc.text(`Precio: ${property.price?.toLocaleString() || 'N/A'} ${property.currency || ''}`, 20, yPosition);
-  yPosition += 10;
-
-  // Section: Visitor Data
-  doc.setFontSize(12);
+  // Cliente
   doc.setFont('helvetica', 'bold');
-  doc.text('DATOS DEL VISITANTE', 20, yPosition);
-  yPosition += 8;
-
-  doc.setFontSize(10);
+  doc.text('Cliente:', 20, yPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Nombre completo: ${visitData.visitorName}`, 20, yPosition);
-  yPosition += 6;
-  doc.text(`RUT: ${visitData.visitorRut}`, 20, yPosition);
-  yPosition += 6;
-  doc.text(`Teléfono: ${visitData.visitorPhone || 'N/A'}`, 20, yPosition);
-  yPosition += 6;
-  doc.text(`Email: ${visitData.visitorEmail || 'N/A'}`, 20, yPosition);
-  yPosition += 10;
+  doc.text(visitData.visitorName, 38, yPos);
 
-  // Section: Visit Data
-  doc.setFontSize(12);
+  // Propiedad (use property ID as MLS)
   doc.setFont('helvetica', 'bold');
-  doc.text('DATOS DE LA VISITA', 20, yPosition);
-  yPosition += 8;
-
-  doc.setFontSize(10);
+  doc.text('Propiedad:', 90, yPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Fecha de visita: ${visitDateFormatted}`, 20, yPosition);
-  yPosition += 6;
-  doc.text(`Hora programada: ${visitData.visitTime}`, 20, yPosition);
-  yPosition += 6;
-  doc.text('Duración estimada: 1 hora', 20, yPosition);
-  yPosition += 6;
+  const propertyId = property.id ? property.id.substring(0, 10) : 'N/A';
+  doc.text(`MLS${propertyId}`, 110, yPos);
 
-  const visitTypeLabels = {
-    primera: 'Primera visita',
-    segunda: 'Segunda visita',
-    tasacion: 'Tasación',
-  };
-  doc.text(`Tipo de visita: ${visitTypeLabels[visitData.visitType]}`, 20, yPosition);
-  yPosition += 10;
+  yPos += 8;
 
-  // Section: Terms and Conditions
-  doc.setFontSize(12);
+  // ========================================
+  // MAIN CONTENT SECTION (3-column layout)
+  // ========================================
+
+  // Property Type Label
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('TÉRMINOS Y CONDICIONES', 20, yPosition);
-  yPosition += 8;
+  doc.text(getPropertyTypeLabel(property), 20, yPos);
+  yPos += 5;
+
+  // Property Address
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  const fullAddress =
+    `${property.address?.street || ''}, ${property.address?.commune || ''}, ${property.address?.city || ''}`.trim();
+  const addressLines = doc.splitTextToSize(fullAddress, 90);
+  doc.text(addressLines, 20, yPos);
+  yPos += 10;
+
+  // Save Y position for image and details
+  const contentStartY = yPos;
+
+  // LEFT COLUMN: Property Image (NOT the logo)
+  try {
+    const imageUrl = property.images?.[0]?.url || property.images?.[0]?.thumbnailUrl;
+    if (imageUrl) {
+      const imgDataUrl = await loadImageAsDataURL(imageUrl);
+      // Add image: x=20, y=contentStartY, width=60mm, height=45mm
+      doc.addImage(imgDataUrl, 'JPEG', 20, contentStartY, 60, 45);
+    } else {
+      // Placeholder if no image
+      doc.setFillColor(220, 220, 220);
+      doc.rect(20, contentStartY, 60, 45, 'F');
+      doc.setFontSize(8);
+      doc.text('Sin imagen', 50, contentStartY + 23, { align: 'center' });
+    }
+  } catch (error) {
+    console.warn('Could not load property image:', error);
+    // Placeholder on error
+    doc.setFillColor(220, 220, 220);
+    doc.rect(20, contentStartY, 60, 45, 'F');
+    doc.setFontSize(8);
+    doc.text('Sin imagen', 50, contentStartY + 23, { align: 'center' });
+  }
+
+  // CENTER COLUMN: Property Details
+  let detailsY = contentStartY;
+  const detailsX = 85;
+
+  // Price with conversion
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Precio:', detailsX, detailsY);
+  detailsY += 5;
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  const terms = [
-    'El visitante declara que asiste voluntariamente a la visita de la propiedad antes señalada.',
-    'El visitante se compromete a cuidar y respetar la propiedad durante su recorrido.',
-    'La presente orden de visita es válida únicamente para la fecha y hora indicada.',
-    'El visitante autoriza a Gumucio Propiedades a contactarlo para seguimiento comercial.',
-    'Queda prohibido el ingreso con mascotas, alimentos o bebidas a la propiedad.',
-    'El visitante debe presentar su cédula de identidad al momento de la visita.',
-    'Esta orden es personal e intransferible.',
-    'Horarios permitidos: Lunes a Viernes 09:00 a 18:00 hrs | Sábados 10:00 a 14:00 hrs',
-  ];
 
-  terms.forEach((term, index) => {
-    const lines = doc.splitTextToSize(`${index + 1}. ${term}`, 170);
-    doc.text(lines, 20, yPosition);
-    yPosition += lines.length * 5;
-  });
+  // Format price with conversion to UF
+  const priceText = await formatPriceWithConversion(
+    property.price || 0,
+    property.currency || 'USD',
+    'UF', // Convert to UF
+  );
+  const priceLines = doc.splitTextToSize(priceText, 70);
+  doc.text(priceLines, detailsX, detailsY);
+  detailsY += priceLines.length * 4 + 3;
 
-  yPosition += 5;
-
-  // Section: Signature (centered)
-  doc.setFontSize(12);
+  // Características (Features)
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text('SECCIÓN DE FIRMA', 105, yPosition, { align: 'center' });
-  yPosition += 8;
+  doc.text('Características:', detailsX, detailsY);
+  detailsY += 5;
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text(
-    'Por la presente, declaro haber leído y aceptado las condiciones establecidas.',
-    105,
-    yPosition,
-    { align: 'center' },
-  );
-  yPosition += 15;
 
-  // Signature line centered
-  const signatureLineStart = 70;
-  const signatureLineEnd = 140;
-  doc.line(signatureLineStart, yPosition, signatureLineEnd, yPosition);
-  yPosition += 5;
-  doc.text('Firma del Visitante', 105, yPosition, { align: 'center' });
+  // Bedrooms
+  if (property.features?.bedrooms !== undefined) {
+    doc.text(`Habitaciones: ${property.features.bedrooms}`, detailsX + 2, detailsY);
+    detailsY += 4;
+  }
 
-  // Footer
+  // Bathrooms
+  if (property.features?.bathrooms !== undefined) {
+    doc.text(`Baños: ${property.features.bathrooms}`, detailsX + 2, detailsY);
+    detailsY += 4;
+  }
+
+  // Built area (superficie útil)
+  if (property.features?.builtArea !== undefined) {
+    doc.text(`Superficie útil: ${property.features.builtArea} m²`, detailsX + 2, detailsY);
+    detailsY += 4;
+  }
+
+  // Total area (superficie total)
+  if (property.features?.totalArea !== undefined) {
+    doc.text(`Superficie total: ${property.features.totalArea} m²`, detailsX + 2, detailsY);
+    detailsY += 4;
+  }
+
+  detailsY += 2;
+
+  // Amenities (show property's amenities)
+  if (property.amenities && property.amenities.length > 0) {
+    // Limit to first 8 amenities to fit in space
+    const displayAmenities = property.amenities.slice(0, 8);
+
+    displayAmenities.forEach((amenity) => {
+      doc.text(`x  ${amenity}`, detailsX + 2, detailsY);
+      detailsY += 4;
+    });
+  }
+
+  // RIGHT COLUMN: QR Code
+  try {
+    const propertyUrl = `${PDF_CONFIG.baseUrl}/property/${property.id}`;
+    const qrDataUrl = await QRCode.toDataURL(propertyUrl, {
+      width: 200,
+      margin: 1,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF',
+      },
+    });
+
+    // Add QR code: x=160, y=contentStartY, 30x30mm
+    doc.addImage(qrDataUrl, 'PNG', 160, contentStartY, 30, 30);
+
+    // Label below QR
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Escanea para ver', 175, contentStartY + 32, { align: 'center' });
+    doc.text('la propiedad', 175, contentStartY + 35, { align: 'center' });
+  } catch (error) {
+    console.warn('Could not generate QR code:', error);
+  }
+
+  // ========================================
+  // LEGAL TEXT SECTION
+  // ========================================
+
+  yPos = contentStartY + 50; // Position after image/details section
+
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+
+  // Legal text
+  const legalText = `De interesarme en esta propiedad, me obligo a encargar a la corredora individualizada al pie de firma (la "Corredora") la realización de los trámites pertinentes ante el propietario, para comprarla o arrendarla. Declaro que la Corredora es la primera en ofrecérmela y cualquier gestión la realizaré por su intermedio. Por consiguiente, me obligo a pagar a la Corredora una comisión de: (a) 2% del valor de compra más IVA en caso de adquirir la propiedad, debiendo pagarle a la fecha de firma de la escritura de compraventa, o bien, (b) el 50% de una renta mensual de arriendo más IVA, debiendo pagarle a la fecha de firma del contrato de arriendo. Si directa o indirectamente compro o arriendo la propiedad prescindiendo de la intermediación de la Corredora, pagaré a ésta -como multa- el doble de la comisión establecida en el párrafo anterior. Declaro, bajo juramento, que solicito y recibo esta orden de visita para mí, mi cónyuge y/o para la persona a quien señalo en el encabezamiento, y que cuento con su autorización para representarla. MercadoLibre Chile Ltda. y sus sociedades relacionadas no son dueños de las propiedades ofrecidas y no verifica los antecedentes (jurídicos, técnicos, metrajes, etc.) de las propiedades, por lo que se recomienda a los interesados los haga estudiar por profesionales de su confianza. Cualquier dificultad que pueda surgir entre el interesado y la Corredora con motivo de esta orden de visita será resuelta por un árbitro a ser designado por la Corredora, el que deberá tener el título de abogado y ser especialista en derecho inmobiliario con a lo menos 5 años de experiencia en el ejercicio de la profesión. El árbitro actuará como arbitrador y amigable componedor en única instancia y contra cuyo fallo no procederá recurso alguno.`;
+
+  const legalLines = doc.splitTextToSize(legalText, 170);
+  doc.text(legalLines, 20, yPos);
+  yPos += legalLines.length * 3 + 10;
+
+  // ========================================
+  // SIGNATURE SECTION
+  // ========================================
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+
+  // Firma del Corredor (left)
+  const signatureLeftX = 50;
+  const signatureRightX = 150;
+
+  // Left signature
+  doc.line(30, yPos, 70, yPos); // signature line
+  doc.text('Firma del Corredor', signatureLeftX, yPos + 5, { align: 'center' });
+
+  // Right signature
+  doc.line(130, yPos, 170, yPos); // signature line
+  doc.text('Firma del Visitante', signatureRightX, yPos + 5, { align: 'center' });
+
+  // ========================================
+  // FOOTER
+  // ========================================
+
   const pageHeight = doc.internal.pageSize.height;
+
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'italic');
-  doc.text(
-    'Gumucio Propiedades | Venta y Arriendo de Propiedades en Rancagua',
-    105,
-    pageHeight - 15,
-    {
-      align: 'center',
-    },
-  );
-  const contactPhone = property.contactInfo?.phone || 'N/A';
-  const contactEmail = property.contactInfo?.email || 'N/A';
-  doc.text(
-    `Contacto: ${contactPhone} | ${contactEmail}`,
-    105,
-    pageHeight - 10,
-    { align: 'center' },
-  );
-  doc.text(
-    'Este documento tiene validez legal como autorización de ingreso a la propiedad.',
-    105,
-    pageHeight - 5,
-    { align: 'center' },
-  );
+  doc.setFont('helvetica', 'normal');
 
-  // Save PDF with format: OV_{address}_{date}.pdf
+  // Broker information
+  const brokerInfo = `${PDF_CONFIG.brokerName} | ${PDF_CONFIG.brokerPhone}`;
+  doc.text(brokerInfo, 105, pageHeight - 10, { align: 'center' });
+
+  // Page number
+  doc.setFontSize(7);
+  doc.text('Página | nro 1', 190, pageHeight - 10, { align: 'right' });
+
+  // ========================================
+  // SAVE PDF
+  // ========================================
+
   const addressForFilename = sanitizeFilename(property.address?.street || 'Propiedad');
-  // Convert YYYY-MM-DD to DDMMYYYY for filename
-  const dateForFilename = formatDate(visitData.visitDate).replace(/-/g, ''); // DDMMYYYY format
+  const dateForFilename = formatDate(new Date().toISOString()).replace(/-/g, '');
 
-  doc.save(`OV_${addressForFilename}_${dateForFilename}.pdf`);
+  doc.save(`OrdenVisita_${addressForFilename}_${dateForFilename}.pdf`);
 };
