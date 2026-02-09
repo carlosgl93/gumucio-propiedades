@@ -117,26 +117,26 @@ export const generateVisitOrderPDF = async (
     console.warn('Could not load logo:', error);
   }
 
-  // Top-right: Dates
+  // Top-right: Dates (positioned below logo)
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.text(`Emitida: ${emissionDate}`, 190, 28, { align: 'right' });
-  doc.text(`Plazo máximo para la visita: ${maxVisitDate}`, 190, 32, { align: 'right' });
+  doc.text(`Plazo máximo para la visita: ${maxVisitDate}`, 190, 33, { align: 'right' });
 
   // Title
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.text('Orden de Visita', 105, 20, { align: 'center' });
 
-  // Line separator
+  // Line separator (positioned below dates with spacing)
   doc.setLineWidth(0.3);
-  doc.line(20, 30, 190, 30);
+  doc.line(20, 42, 190, 42);
 
   // ========================================
   // INFO ROW (Cliente, Propiedad, Fecha)
   // ========================================
 
-  let yPos = 36;
+  let yPos = 50;
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
 
