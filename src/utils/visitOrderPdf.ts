@@ -62,26 +62,6 @@ const getPropertyTypeLabel = (property: Property): string => {
 };
 
 /**
- * Load image as data URL
- */
-const loadImageAsDataURL = (url: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx?.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/jpeg'));
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-};
-
-/**
  * Generate a PDF for a property visit order
  * @param property - The property for the visit
  * @param visitData - The visitor information
@@ -174,35 +154,12 @@ export const generateVisitOrderPDF = async (
   doc.text(addressLines, 20, yPos);
   yPos += 10;
 
-  // Save Y position for image and details
+  // Save Y position for details
   const contentStartY = yPos;
 
-  // LEFT COLUMN: Property Image (NOT the logo)
-  try {
-    const imageUrl = property.images?.[0]?.url || property.images?.[0]?.thumbnailUrl;
-    if (imageUrl) {
-      const imgDataUrl = await loadImageAsDataURL(imageUrl);
-      // Add image: x=20, y=contentStartY, width=60mm, height=45mm
-      doc.addImage(imgDataUrl, 'JPEG', 20, contentStartY, 60, 45);
-    } else {
-      // Placeholder if no image
-      doc.setFillColor(220, 220, 220);
-      doc.rect(20, contentStartY, 60, 45, 'F');
-      doc.setFontSize(8);
-      doc.text('Sin imagen', 50, contentStartY + 23, { align: 'center' });
-    }
-  } catch (error) {
-    console.warn('Could not load property image:', error);
-    // Placeholder on error
-    doc.setFillColor(220, 220, 220);
-    doc.rect(20, contentStartY, 60, 45, 'F');
-    doc.setFontSize(8);
-    doc.text('Sin imagen', 50, contentStartY + 23, { align: 'center' });
-  }
-
-  // CENTER COLUMN: Property Details
+  // Property Details (full width)
   let detailsY = contentStartY;
-  const detailsX = 85;
+  const detailsX = 20;
 
   // Price with conversion
   doc.setFontSize(10);
@@ -219,7 +176,7 @@ export const generateVisitOrderPDF = async (
     property.currency || 'USD',
     'UF', // Convert to UF
   );
-  const priceLines = doc.splitTextToSize(priceText, 70);
+  const priceLines = doc.splitTextToSize(priceText, 130);
   doc.text(priceLines, detailsX, detailsY);
   detailsY += priceLines.length * 4 + 3;
 
@@ -269,7 +226,7 @@ export const generateVisitOrderPDF = async (
     });
   }
 
-  // RIGHT COLUMN: QR Code
+  // QR Code (right side)
   try {
     const propertyUrl = `${PDF_CONFIG.baseUrl}/property/${property.id}`;
     const qrDataUrl = await QRCode.toDataURL(propertyUrl, {
@@ -281,14 +238,14 @@ export const generateVisitOrderPDF = async (
       },
     });
 
-    // Add QR code: x=160, y=contentStartY, 30x30mm
-    doc.addImage(qrDataUrl, 'PNG', 160, contentStartY, 30, 30);
+    // Add QR code: x=155, y=contentStartY, 25x25mm
+    doc.addImage(qrDataUrl, 'PNG', 155, contentStartY, 25, 25);
 
     // Label below QR
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text('Escanea para ver', 175, contentStartY + 32, { align: 'center' });
-    doc.text('la propiedad', 175, contentStartY + 35, { align: 'center' });
+    doc.text('Escanea para ver', 167, contentStartY + 27, { align: 'center' });
+    doc.text('la propiedad', 167, contentStartY + 30, { align: 'center' });
   } catch (error) {
     console.warn('Could not generate QR code:', error);
   }
