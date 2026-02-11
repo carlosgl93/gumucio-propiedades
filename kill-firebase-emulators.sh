@@ -17,6 +17,7 @@ PORTS=(
   4000  # Emulator UI
   4400  # Emulator Hub
   4500  # Logging
+  8081  # Additional port for Firestore Emulator (if used with UI)
 )
 
 # Kill processes on each port
