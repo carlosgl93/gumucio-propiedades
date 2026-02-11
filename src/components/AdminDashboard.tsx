@@ -1,13 +1,15 @@
 // components/AdminDashboard.tsx
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   Add,
   Delete,
+  Description,
   Edit,
   ExitToApp,
   Home,
   Refresh,
+  Search,
   Share,
   Star,
   TrendingUp,
@@ -28,6 +30,7 @@ import {
   Fab,
   Grid,
   IconButton,
+  InputAdornment,
   Paper,
   Table,
   TableBody,
@@ -35,6 +38,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material';
 
@@ -44,6 +48,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useDeleteProperty, useProperties, usePropertyStats } from '../hooks/useProperties';
 import { PropertyForm } from './PropertyForm';
 import { PropertyShareButtons } from './PropertyShareButtons';
+import { VisitOrderDialog } from './VisitOrderDialog';
 
 export const AdminDashboard = () => {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -52,6 +57,9 @@ export const AdminDashboard = () => {
   const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [propertyToShare, setPropertyToShare] = useState<Property | null>(null);
+  const [visitOrderDialogOpen, setVisitOrderDialogOpen] = useState(false);
+  const [propertyForVisitOrder, setPropertyForVisitOrder] = useState<Property | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { logout, user } = useAuth();
 
@@ -90,6 +98,11 @@ export const AdminDashboard = () => {
   const handleShareClick = (property: Property) => {
     setPropertyToShare(property);
     setShareDialogOpen(true);
+  };
+
+  const handleVisitOrderClick = (property: Property) => {
+    setPropertyForVisitOrder(property);
+    setVisitOrderDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
@@ -142,6 +155,21 @@ export const AdminDashboard = () => {
     const formatter = new Intl.NumberFormat('es-CL');
     return `${formatter.format(price)} ${currency}`;
   };
+
+  // Filter properties based on search query - memoized for performance
+  const filteredProperties = useMemo(() => {
+    return properties.filter((property) => {
+      if (!searchQuery.trim()) return true;
+
+      const query = searchQuery.toLowerCase();
+      return (
+        property.title?.toLowerCase().includes(query) ||
+        property.address?.street?.toLowerCase().includes(query) ||
+        property.address?.commune?.toLowerCase().includes(query) ||
+        property.address?.city?.toLowerCase().includes(query)
+      );
+    });
+  }, [properties, searchQuery]);
 
   if (showForm) {
     return (
@@ -281,7 +309,11 @@ export const AdminDashboard = () => {
             <Typography variant="h6">
               Propiedades
               {!isLoading && (
-                <Chip label={`${properties.length} total`} size="small" sx={{ ml: 1 }} />
+                <Chip
+                  label={`${filteredProperties.length} ${searchQuery ? 'filtradas' : 'total'}`}
+                  size="small"
+                  sx={{ ml: 1 }}
+                />
               )}
             </Typography>
             <Button
@@ -293,6 +325,22 @@ export const AdminDashboard = () => {
               Nueva Propiedad
             </Button>
           </Box>
+
+          {/* Search Bar */}
+          <TextField
+            fullWidth
+            placeholder="Buscar por título, dirección, comuna o ciudad..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }}
+          />
 
           {isLoading ? (
             <Box display="flex" justifyContent="center" p={4}>
@@ -314,24 +362,28 @@ export const AdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {properties.length === 0 ? (
+                  {filteredProperties.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} align="center">
                         <Typography color="text.secondary">
-                          No hay propiedades registradas
+                          {searchQuery
+                            ? 'No se encontraron propiedades con ese criterio de búsqueda'
+                            : 'No hay propiedades registradas'}
                         </Typography>
-                        <Button
-                          variant="outlined"
-                          startIcon={<Add />}
-                          onClick={handleCreateProperty}
-                          sx={{ mt: 2 }}
-                        >
-                          Crear Primera Propiedad
-                        </Button>
+                        {!searchQuery && (
+                          <Button
+                            variant="outlined"
+                            startIcon={<Add />}
+                            onClick={handleCreateProperty}
+                            sx={{ mt: 2 }}
+                          >
+                            Crear Primera Propiedad
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    properties.map((property) => (
+                    filteredProperties.map((property) => (
                       <TableRow key={property.id}>
                         <TableCell>
                           <Typography variant="subtitle2">{property.title}</Typography>
@@ -376,6 +428,15 @@ export const AdminDashboard = () => {
                             disabled={deleteProperty.isPending}
                           >
                             <Edit />
+                          </IconButton>
+                          <IconButton
+                            onClick={() => handleVisitOrderClick(property)}
+                            size="small"
+                            color="secondary"
+                            title="Generar Orden de Visita"
+                            disabled={deleteProperty.isPending}
+                          >
+                            <Description />
                           </IconButton>
                           <IconButton
                             onClick={() => handleShareClick(property)}
@@ -464,6 +525,16 @@ export const AdminDashboard = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Visit Order Dialog */}
+      <VisitOrderDialog
+        open={visitOrderDialogOpen}
+        property={propertyForVisitOrder}
+        onClose={() => {
+          setVisitOrderDialogOpen(false);
+          setPropertyForVisitOrder(null);
+        }}
+      />
 
       {/* Floating Action Button for Mobile */}
       <Fab

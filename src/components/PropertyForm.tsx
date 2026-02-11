@@ -1,7 +1,7 @@
 // components/PropertyForm.tsx
 import { useEffect, useState } from 'react';
 
-import { Close, CloudUpload, Delete, DragIndicator } from '@mui/icons-material';
+import { Close, CloudUpload, Delete, Description, DragIndicator } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -61,6 +61,7 @@ import {
   parseNumericInput,
   validateProperty,
 } from '../utils/validations';
+import { VisitOrderDialog } from './VisitOrderDialog';
 
 interface PropertyFormProps {
   property?: Property | null;
@@ -148,6 +149,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [visitOrderDialogOpen, setVisitOrderDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -488,9 +490,21 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
           boxShadow: 1,
         }}
       >
-        <Typography variant="h5" gutterBottom>
-          {property ? 'Editar Propiedad' : 'Nueva Propiedad'}
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h5">
+            {property ? 'Editar Propiedad' : 'Nueva Propiedad'}
+          </Typography>
+          {property && (
+            <Button
+              variant="outlined"
+              startIcon={<Description />}
+              onClick={() => setVisitOrderDialogOpen(true)}
+              size="small"
+            >
+              Generar Orden de Visita
+            </Button>
+          )}
+        </Box>
 
         {error && (
           <Alert severity="error" sx={{ mt: 2 }}>
@@ -1074,6 +1088,15 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Visit Order Dialog */}
+      {property && (
+        <VisitOrderDialog
+          open={visitOrderDialogOpen}
+          property={formData as Property}
+          onClose={() => setVisitOrderDialogOpen(false)}
+        />
+      )}
     </Box>
   );
 };
