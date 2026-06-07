@@ -14,7 +14,7 @@ export const Footer = () => {
         overflow: 'hidden',
       }}
     >
-      <picture>
+      <picture style={{ display: 'block', aspectRatio: '1280/284' }}>
         <source srcSet="/footer-logo.webp" type="image/webp" />
         <img
           style={{
@@ -28,6 +28,7 @@ export const Footer = () => {
           alt="Gumucio Propiedades"
           width={1280}
           height={284}
+          fetchPriority="high"
         />
       </picture>
     </Box>

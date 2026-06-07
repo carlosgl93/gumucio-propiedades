@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react';
+
 import { Footer } from './Footer';
 
 describe('Footer CLS optimization', () => {
@@ -9,6 +10,7 @@ describe('Footer CLS optimization', () => {
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('width', '1280');
     expect(img).toHaveAttribute('height', '284');
+    expect(img).toHaveAttribute('fetchpriority', 'high');
   });
 
   it('renders picture element with webp source', () => {
