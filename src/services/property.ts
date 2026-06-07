@@ -1,13 +1,17 @@
 import {
+  DocumentSnapshot,
   Timestamp,
   addDoc,
   collection,
   deleteDoc,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
+  limit,
   orderBy,
   query,
+  startAfter,
   updateDoc,
   where,
 } from 'firebase/firestore';
@@ -86,6 +90,53 @@ export class PropertyService {
 
     const snapshot = await getDocs(q);
     return snapshot.docs.map((doc) => this.formatPropertyData(doc.data(), doc.id));
+  }
+
+  async getPropertiesCount(type: 'rent' | 'sale', isActive: boolean): Promise<number> {
+    const q = query(
+      collection(db, this.collectionName),
+      where('type', '==', type),
+      where('isActive', '==', isActive),
+    );
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
+  }
+
+  async getPropertiesPaginated(
+    type: 'rent' | 'sale',
+    isActive: boolean,
+    pageLimit: number,
+    cursor: DocumentSnapshot | null,
+  ): Promise<{ properties: Property[]; lastDoc: DocumentSnapshot | null; hasMore: boolean }> {
+    let q = query(
+      collection(db, this.collectionName),
+      where('type', '==', type),
+      where('isActive', '==', isActive),
+      orderBy('createdAt', 'desc'),
+      limit(pageLimit + 1),
+    );
+
+    if (cursor) {
+      q = query(
+        collection(db, this.collectionName),
+        where('type', '==', type),
+        where('isActive', '==', isActive),
+        orderBy('createdAt', 'desc'),
+        startAfter(cursor),
+        limit(pageLimit + 1),
+      );
+    }
+
+    const snapshot = await getDocs(q);
+    const hasMore = snapshot.docs.length > pageLimit;
+    const docs = hasMore ? snapshot.docs.slice(0, pageLimit) : snapshot.docs;
+    const lastDoc = docs.length > 0 ? docs[docs.length - 1] : null;
+
+    return {
+      properties: docs.map((d) => this.formatPropertyData(d.data(), d.id)),
+      lastDoc,
+      hasMore,
+    };
   }
 
   async getAvailableProperties(): Promise<Property[]> {

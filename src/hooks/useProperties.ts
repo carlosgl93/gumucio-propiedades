@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { DocumentSnapshot } from 'firebase/firestore';
 
 import { propertyService } from '@/services/property';
 
@@ -136,6 +137,28 @@ export const useDeletePropertyImage = () => {
     mutationFn: ({ propertyId, imageId }: { propertyId: string; imageId: string }) =>
       propertyService.deletePropertyImage(propertyId, imageId),
   });
+};
+
+export const usePropertiesCount = (type: 'rent' | 'sale') =>
+  useQuery({
+    queryKey: [...propertyKeys.all, 'count', type],
+    queryFn: () => propertyService.getPropertiesCount(type, true),
+    staleTime: 5 * 60 * 1000,
+  });
+
+export const useInfiniteProperties = (type: 'rent' | 'sale', pageSize: number) => {
+  const result = useInfiniteQuery({
+    queryKey: [...propertyKeys.all, 'infinite', type, pageSize],
+    queryFn: ({ pageParam }) =>
+      propertyService.getPropertiesPaginated(type, true, pageSize, pageParam ?? null),
+    initialPageParam: null as DocumentSnapshot | null,
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.lastDoc : undefined),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const properties = result.data?.pages.flatMap((p) => p.properties) ?? [];
+
+  return { ...result, properties };
 };
 
 // hooks/usePropertyStats.ts
