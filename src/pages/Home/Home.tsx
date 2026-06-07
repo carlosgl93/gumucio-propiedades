@@ -90,11 +90,10 @@ function Home() {
           }}
         >
           <source srcSet="/modern-house-bg.webp" type="image/webp" />
-          {/* @ts-expect-error fetchPriority not yet in React types */}
           <img
             src="/modern-house-bg.png"
             alt=""
-            fetchpriority="high"
+            fetchPriority="high"
             loading="eager"
             style={{
               width: '100%',
