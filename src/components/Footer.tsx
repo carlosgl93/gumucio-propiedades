@@ -9,6 +9,7 @@ export const Footer = () => {
         position: 'relative',
         bottom: 0,
         width: '100%',
+        aspectRatio: '1280 / 284',
         p: 0,
         m: 0,
         overflow: 'hidden',

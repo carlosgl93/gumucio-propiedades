@@ -20,4 +20,14 @@ describe('Footer CLS optimization', () => {
     expect(source).toBeInTheDocument();
     expect(source).toHaveAttribute('srcset', '/footer-logo.webp');
   });
+
+  // Note: aspectRatio '1280 / 284' is set via MUI sx on the Box wrapper (CSS-in-JS).
+  // JSDOM does not compute inline styles from MUI sx, so we assert structural integrity instead.
+  it('renders a Box wrapper containing the picture element', () => {
+    const { container } = render(<Footer />);
+
+    const picture = container.querySelector('picture');
+    expect(picture).toBeInTheDocument();
+    expect(picture?.parentElement?.tagName.toLowerCase()).toBe('div');
+  });
 });
