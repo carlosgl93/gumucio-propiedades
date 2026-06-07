@@ -6,10 +6,8 @@ import { styled } from '@mui/material/styles';
 // Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
-  backgroundImage: 'url(/modern-house-bg.png)',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-  backgroundRepeat: 'no-repeat',
+  position: 'relative',
+  overflow: 'hidden',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -32,6 +30,8 @@ const HeroContent = styled(Box)(({ theme }) => ({
   alignItems: 'center',
   justifyContent: 'start',
   padding: theme.spacing(4, 6),
+  position: 'relative',
+  zIndex: 1,
   [theme.breakpoints.down('sm')]: {
     padding: theme.spacing(2, 1),
     alignItems: 'space-around',
@@ -80,6 +80,31 @@ function Home() {
     <Box>
       {/* Hero Section */}
       <HeroSection>
+        <picture
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 0,
+          }}
+        >
+          <source srcSet="/modern-house-bg.webp" type="image/webp" />
+          {/* @ts-expect-error fetchPriority not yet in React types */}
+          <img
+            src="/modern-house-bg.png"
+            alt=""
+            fetchpriority="high"
+            loading="eager"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              display: 'block',
+            }}
+          />
+        </picture>
         <HeroContent>
           <Box
             sx={{
@@ -97,6 +122,8 @@ function Home() {
 
         <Box
           sx={{
+            position: 'relative',
+            zIndex: 1,
             width: '100%',
             px: { xs: 2, sm: 4, md: 6 },
             display: 'flex',
