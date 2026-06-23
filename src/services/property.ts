@@ -196,14 +196,42 @@ export class PropertyService {
     await Promise.all(deletePromises);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private formatPropertyData(data: any, id: string): Property {
     return {
       id,
-      ...data,
+      title: data.title ?? '',
+      description: data.description ?? '',
+      type: data.type ?? 'rent',
+      price: data.price ?? 0,
+      currency: data.currency ?? 'CLP',
+      propertyType: data.propertyType ?? 'casa',
+      status: data.status ?? 'disponible',
+      address: {
+        street: data.address?.street ?? '',
+        city: data.address?.city ?? '',
+        commune: data.address?.commune ?? '',
+        region: data.address?.region ?? '',
+        country: data.address?.country ?? 'Chile',
+      },
+      features: {
+        bedrooms: data.features?.bedrooms ?? 0,
+        bathrooms: data.features?.bathrooms ?? 0,
+        parkingSpaces: data.features?.parkingSpaces ?? 0,
+        totalArea: data.features?.totalArea ?? 0,
+        builtArea: data.features?.builtArea ?? 0,
+        yearBuilt: data.features?.yearBuilt ?? 0,
+      },
+      amenities: data.amenities ?? [],
+      images: data.images ?? [],
+      contactInfo: {
+        phone: data.contactInfo?.phone ?? '',
+        email: data.contactInfo?.email ?? '',
+        whatsapp: data.contactInfo?.whatsapp ?? '',
+      },
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
-      images: data.images || [],
+      isActive: data.isActive ?? true,
+      isFeatured: data.isFeatured ?? false,
     };
   }
 }

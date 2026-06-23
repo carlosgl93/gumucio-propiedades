@@ -2,15 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { Bathtub, Bed, DirectionsCar, LocationOn, SquareFoot } from '@mui/icons-material';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardMedia,
-  Chip,
-  Skeleton,
-  Typography,
-} from '@mui/material';
+import { Box, Card, CardContent, CardMedia, Chip, Skeleton, Typography } from '@mui/material';
 
 import { Property } from '@/models';
 
@@ -73,9 +65,10 @@ export const PropertyCard = ({ property }: PropertyCardProps) => {
           component="img"
           height="200"
           image={property.images?.[0]?.url || '/placeholder-property.jpg'}
-          alt={property.title}
+          alt={property.title || 'Propiedad sin título'}
           loading="lazy"
           onLoad={() => setImageLoaded(true)}
+          onError={() => setImageLoaded(true)}
           sx={{ opacity: imageLoaded ? 1 : 0, transition: 'opacity 0.3s' }}
         />
       </Box>
@@ -95,12 +88,14 @@ export const PropertyCard = ({ property }: PropertyCardProps) => {
 
       <CardContent sx={{ flexGrow: 1 }}>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
-          <Chip
-            label={property.status.toUpperCase()}
-            size="small"
-            color={property.status === 'disponible' ? 'success' : 'default'}
-            sx={{ fontSize: '0.7rem', fontWeight: 600 }}
-          />
+          {property.status && (
+            <Chip
+              label={property.status.toUpperCase()}
+              size="small"
+              color={property.status === 'disponible' ? 'success' : 'default'}
+              sx={{ fontSize: '0.7rem', fontWeight: 600 }}
+            />
+          )}
           {property.isFeatured && <Chip label="DESTACADO" size="small" color="warning" />}
         </Box>
 
@@ -113,19 +108,23 @@ export const PropertyCard = ({ property }: PropertyCardProps) => {
             fontSize: '1.1rem',
           }}
         >
-          {property.title}
+          {property.title || 'Sin título'}
         </Typography>
 
-        <Box display="flex" alignItems="center" mb={2} color="text.secondary">
-          <LocationOn sx={{ fontSize: 16, mr: 0.5 }} />
-          <Typography variant="body2" noWrap>
-            {property.address.commune}, {property.address.city}
+        {(property.address?.commune || property.address?.city) && (
+          <Box display="flex" alignItems="center" mb={2} color="text.secondary">
+            <LocationOn sx={{ fontSize: 16, mr: 0.5 }} />
+            <Typography variant="body2" noWrap>
+              {[property.address?.commune, property.address?.city].filter(Boolean).join(', ')}
+            </Typography>
+          </Box>
+        )}
+
+        {property.price > 0 && (
+          <Typography variant="h5" color="teal.main" fontWeight="bold" mb={2}>
+            {formatPrice(property.price, property.currency)}
           </Typography>
-        </Box>
-
-        <Typography variant="h5" color="teal.main" fontWeight="bold" mb={2}>
-          {formatPrice(property.price, property.currency)}
-        </Typography>
+        )}
 
         <Box display="flex" gap={2} flexWrap="wrap">
           {(property.features?.bedrooms || 0) > 0 && (

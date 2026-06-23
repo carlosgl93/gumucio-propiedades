@@ -28,7 +28,6 @@ export const Footer = () => {
           src="/footer-logo.png"
           alt="Gumucio Propiedades"
           width={1280}
-          height={284}
           fetchPriority="high"
         />
       </picture>

@@ -39,44 +39,52 @@ export const PropertyShareButtons = ({ property, variant = 'full' }: PropertySha
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Generate shareable URL
-  const propertyUrl = `${import.meta.env.VITE_PROD_URL}/property/${property.id}`;
+  const propertyUrl = `${import.meta.env.VITE_PROD_URL}/property/${property.id || ''}`;
+
+  const title = property.title || 'Propiedad disponible';
+  const price = property.price ?? 0;
+  const currency = property.currency || 'CLP';
+  const commune = property.address?.commune || '';
+  const city = property.address?.city || '';
 
   // Generate share text in Spanish
   const features: string[] = [];
-  if (property.features.bedrooms) {
+  if (property.features?.bedrooms) {
     features.push(`${property.features.bedrooms} dorm`);
   }
-  if (property.features.bathrooms) {
+  if (property.features?.bathrooms) {
     features.push(`${property.features.bathrooms} baños`);
   }
-  if (property.features.totalArea) {
+  if (property.features?.totalArea) {
     features.push(`${property.features.totalArea}m²`);
   }
 
-  const formatPrice = (price: number, currency: string): string => {
-    if (currency === 'CLP') {
+  const formatPrice = (priceValue: number, curr: string): string => {
+    if (!priceValue) return 'Consultar precio';
+    if (curr === 'CLP') {
       return new Intl.NumberFormat('es-CL', {
         style: 'currency',
         currency: 'CLP',
         minimumFractionDigits: 0,
-      }).format(price);
+      }).format(priceValue);
     }
-    return `${currency} ${price.toLocaleString('es-CL')}`;
+    return `${curr} ${priceValue.toLocaleString('es-CL')}`;
   };
 
   // WhatsApp-specific share text (includes image URL for better previews)
-  const whatsappText = `${property.title}
-${formatPrice(property.price, property.currency)}${property.type === 'rent' ? '/mes' : ''}
-📍 ${property.address.commune}, ${property.address.city}
+  const locationText = [commune, city].filter(Boolean).join(', ');
+  const whatsappText = `${title}
+${formatPrice(price, currency)}${property.type === 'rent' ? '/mes' : ''}
+${locationText ? `📍 ${locationText}` : ''}
 ${features.join(' • ')}
 
 Ver más: ${propertyUrl}
-${property.images?.[0]?.url ? `\nImagen: ${property.images[0].url}` : ''}`;
+${property.images?.[0]?.url ? `\nImagen: ${property.images[0].url}` : ''}`.trim();
 
-  const shareText = `${property.title}
-${formatPrice(property.price, property.currency)}${property.type === 'rent' ? '/mes' : ''}
-📍 ${property.address.commune}, ${property.address.city}
-${features.join(' • ')}`;
+  const shareText = `${title}
+${formatPrice(price, currency)}${property.type === 'rent' ? '/mes' : ''}
+${locationText ? `📍 ${locationText}` : ''}
+${features.join(' • ')}`.trim();
 
   const handleCopyLink = async () => {
     try {
