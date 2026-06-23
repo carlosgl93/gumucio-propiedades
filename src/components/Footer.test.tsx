@@ -3,14 +3,25 @@ import { render } from '@testing-library/react';
 import { Footer } from './Footer';
 
 describe('Footer CLS optimization', () => {
-  it('renders img with width and height attributes to prevent layout shift', () => {
+  it('renders img with width and fetchpriority to prevent layout shift', () => {
     render(<Footer />);
 
     const img = document.querySelector('img[alt="Gumucio Propiedades"]');
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('width', '1280');
-    expect(img).toHaveAttribute('height', '284');
     expect(img).toHaveAttribute('fetchpriority', 'high');
+  });
+
+  it('wraps img in a picture with aspect-ratio for intrinsic sizing', () => {
+    const { container } = render(<Footer />);
+
+    const picture = container.querySelector('picture');
+    expect(picture).toBeInTheDocument();
+    // Parent Box carries aspectRatio: '1280 / 284' via MUI sx.
+    // JSDOM does not compute inline styles from MUI sx, so we assert the
+    // structural intent (picture with inline style carrying the aspect ratio).
+    const pictureStyle = (picture as HTMLElement | null)?.getAttribute('style') ?? '';
+    expect(pictureStyle).toContain('aspect-ratio');
   });
 
   it('renders picture element with webp source', () => {

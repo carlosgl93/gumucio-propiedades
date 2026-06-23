@@ -55,31 +55,32 @@ export const generateInstagramStoryImage = async (property: Property): Promise<B
     // Title
     ctx.font = 'bold 60px Arial, sans-serif';
     const titleY = CANVAS_HEIGHT - 480;
-    wrapText(ctx, property.title, CANVAS_WIDTH / 2, titleY, CANVAS_WIDTH - 100, 70);
+    wrapText(ctx, property.title || 'Propiedad disponible', CANVAS_WIDTH / 2, titleY, CANVAS_WIDTH - 100, 70);
 
     // Price
-    const formattedPrice = formatPrice(property.price, property.currency);
+    const formattedPrice = formatPrice(property.price || 0, property.currency || 'CLP');
     ctx.font = 'bold 70px Arial, sans-serif';
     ctx.fillText(formattedPrice, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 350);
 
     // Location
     ctx.font = '40px Arial, sans-serif';
-    ctx.fillText(
-      `${property.address.commune}, ${property.address.city}`,
-      CANVAS_WIDTH / 2,
-      CANVAS_HEIGHT - 280,
-    );
+    const commune = property.address?.commune || '';
+    const city = property.address?.city || '';
+    const locationText = [commune, city].filter(Boolean).join(', ');
+    if (locationText) {
+      ctx.fillText(locationText, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 280);
+    }
 
     // Features in a row
     ctx.font = '35px Arial, sans-serif';
     const features: string[] = [];
-    if (property.features.bedrooms) {
+    if (property.features?.bedrooms) {
       features.push(`${property.features.bedrooms} dorm`);
     }
-    if (property.features.bathrooms) {
+    if (property.features?.bathrooms) {
       features.push(`${property.features.bathrooms} baños`);
     }
-    if (property.features.totalArea) {
+    if (property.features?.totalArea) {
       features.push(`${property.features.totalArea}m²`);
     }
 

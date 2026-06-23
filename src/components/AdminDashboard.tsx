@@ -386,13 +386,21 @@ export const AdminDashboard = () => {
                     filteredProperties.map((property) => (
                       <TableRow key={property.id}>
                         <TableCell>
-                          <Typography variant="subtitle2">{property.title}</Typography>
+                          <Typography variant="subtitle2">
+                            {property.title || 'Sin título'}
+                          </Typography>
                         </TableCell>
                         <TableCell>
-                          {property.propertyType.charAt(0).toUpperCase() +
-                            property.propertyType.slice(1)}
+                          {property.propertyType
+                            ? property.propertyType.charAt(0).toUpperCase() +
+                              property.propertyType.slice(1)
+                            : '-'}
                         </TableCell>
-                        <TableCell>{formatPrice(property.price, property.currency)}</TableCell>
+                        <TableCell>
+                          {property.price > 0
+                            ? formatPrice(property.price, property.currency)
+                            : 'Consultar precio'}
+                        </TableCell>
                         <TableCell>
                           <Chip
                             label={getStatusLabel(property.status)}
@@ -409,7 +417,7 @@ export const AdminDashboard = () => {
                             size="small"
                           />
                         </TableCell>
-                        <TableCell>{property.address.city}</TableCell>
+                        <TableCell>{property.address?.city || '-'}</TableCell>
                         <TableCell>
                           {property.isFeatured ? <Star color="warning" /> : '-'}
                         </TableCell>

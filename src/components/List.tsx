@@ -120,36 +120,43 @@ export const List = ({ items, title }: ListProps) => {
                 <PropertyCard>
                   <CardMedia
                     component="img"
-                    image={property.images?.[0]?.url}
-                    alt={property.title}
+                    image={property.images?.[0]?.url || '/placeholder-property.jpg'}
+                    alt={property.title || 'Propiedad sin título'}
+                    loading="lazy"
                   />
                   <CardContent>
-                    <Chip
-                      label={property.status.toLocaleUpperCase()}
-                      size="small"
-                      sx={{
-                        mb: 2,
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                      }}
-                    />
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontFamily: '"Crimson Text", serif',
-                        fontWeight: 500,
-                        mb: 2,
-                      }}
-                    >
-                      {property.title}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ fontSize: '0.9rem', lineHeight: 1.6 }}
-                    >
-                      {property.description}
-                    </Typography>
+                    {property.status && (
+                      <Chip
+                        label={property.status.toLocaleUpperCase()}
+                        size="small"
+                        sx={{
+                          mb: 2,
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                        }}
+                      />
+                    )}
+                    {property.title && (
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontFamily: '"Crimson Text", serif',
+                          fontWeight: 500,
+                          mb: 2,
+                        }}
+                      >
+                        {property.title}
+                      </Typography>
+                    )}
+                    {property.description && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: '0.9rem', lineHeight: 1.6 }}
+                      >
+                        {property.description}
+                      </Typography>
+                    )}
                   </CardContent>
                 </PropertyCard>
               </Box>
