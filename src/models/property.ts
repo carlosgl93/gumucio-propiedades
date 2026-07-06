@@ -7,7 +7,7 @@ export interface Property {
   price: number;
   currency: 'CLP' | 'UF';
   propertyType: 'casa' | 'departamento' | 'oficina' | 'terreno' | 'comercial';
-  status: 'disponible' | 'vendido' | 'arrendado' | 'reservado';
+  status: 'disponible' | 'vendido' | 'arrendado' | 'reservado' | 'no_disponible';
   address: {
     street: string;
     city: string;
@@ -70,6 +70,11 @@ Firebase Storage structure:
 /properties/{propertyId}/thumbnails/{imageId}_thumb.{extension}
 */
 
+// Public visibility: properties with status === 'no_disponible' are hidden from
+// visitors/clients and only surfaced in the backoffice. PropertyDetails still
+// loads such a doc if the URL is hit directly (e.g. shared before status changed).
+export const PUBLIC_HIDDEN_STATUSES: readonly string[] = ['no_disponible'];
+
 // Firestore indexes needed (create in Firebase Console):
 /*
 Collection: properties
@@ -77,4 +82,7 @@ Collection: properties
 - propertyType (ascending), status (ascending), price (ascending)
 - isFeatured (ascending), isActive (ascending), createdAt (descending)
 - city (ascending), status (ascending), price (ascending)
+- type (ascending), isActive (ascending), status (ascending), createdAt (descending)
+- type (ascending), isActive (ascending), status (ascending)
+- isFeatured (ascending), isActive (ascending), status (ascending), createdAt (descending)
 */

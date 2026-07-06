@@ -1,5 +1,7 @@
 import {
+  DocumentData,
   DocumentSnapshot,
+  Query,
   Timestamp,
   addDoc,
   collection,
@@ -18,10 +20,30 @@ import {
 import { deleteObject, getDownloadURL, listAll, ref, uploadBytes } from 'firebase/storage';
 
 import { db, storage } from '@/firebase';
-import { Property, PropertyImage } from '@/models';
+import { PUBLIC_HIDDEN_STATUSES, Property, PropertyImage } from '@/models';
+
+export type PropertyVisibility = 'public' | 'admin';
+
+export interface PropertyQueryFilters {
+  status?: string;
+  propertyType?: string;
+  isActive?: boolean;
+  isFeatured?: boolean;
+  visibility?: PropertyVisibility;
+}
 
 export class PropertyService {
   private collectionName = 'properties';
+
+  /** When visibility is 'public' (default), excludes properties whose status
+   * is in PUBLIC_HIDDEN_STATUSES. Pass 'admin' to see the full set. */
+  private applyVisibility(
+    q: Query<DocumentData>,
+    visibility: PropertyVisibility,
+  ): Query<DocumentData> {
+    if (visibility === 'admin') return q;
+    return query(q, where('status', 'not-in', [...PUBLIC_HIDDEN_STATUSES]));
+  }
 
   async createProperty(
     property: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>,
@@ -65,13 +87,9 @@ export class PropertyService {
     return null;
   }
 
-  async getAllProperties(filters?: {
-    status?: string;
-    propertyType?: string;
-    isActive?: boolean;
-    isFeatured?: boolean;
-  }): Promise<Property[]> {
-    let q = query(collection(db, this.collectionName));
+  async getAllProperties(filters?: PropertyQueryFilters): Promise<Property[]> {
+    let q: Query<DocumentData> = query(collection(db, this.collectionName));
+    const visibility = filters?.visibility ?? 'public';
 
     if (filters?.status) {
       q = query(q, where('status', '==', filters.status));
@@ -86,18 +104,24 @@ export class PropertyService {
       q = query(q, where('isFeatured', '==', filters.isFeatured));
     }
 
+    q = this.applyVisibility(q, visibility);
     q = query(q, orderBy('createdAt', 'desc'));
 
     const snapshot = await getDocs(q);
     return snapshot.docs.map((doc) => this.formatPropertyData(doc.data(), doc.id));
   }
 
-  async getPropertiesCount(type: 'rent' | 'sale', isActive: boolean): Promise<number> {
-    const q = query(
+  async getPropertiesCount(
+    type: 'rent' | 'sale',
+    isActive: boolean,
+    visibility: PropertyVisibility = 'public',
+  ): Promise<number> {
+    let q: Query<DocumentData> = query(
       collection(db, this.collectionName),
       where('type', '==', type),
       where('isActive', '==', isActive),
     );
+    q = this.applyVisibility(q, visibility);
     const snapshot = await getCountFromServer(q);
     return snapshot.data().count;
   }
@@ -107,24 +131,24 @@ export class PropertyService {
     isActive: boolean,
     pageLimit: number,
     cursor: DocumentSnapshot | null,
+    visibility: PropertyVisibility = 'public',
   ): Promise<{ properties: Property[]; lastDoc: DocumentSnapshot | null; hasMore: boolean }> {
-    let q = query(
+    let q: Query<DocumentData> = query(
       collection(db, this.collectionName),
       where('type', '==', type),
       where('isActive', '==', isActive),
-      orderBy('createdAt', 'desc'),
-      limit(pageLimit + 1),
     );
+    q = this.applyVisibility(q, visibility);
+    q = query(q, orderBy('createdAt', 'desc'), limit(pageLimit + 1));
 
     if (cursor) {
       q = query(
         collection(db, this.collectionName),
         where('type', '==', type),
         where('isActive', '==', isActive),
-        orderBy('createdAt', 'desc'),
-        startAfter(cursor),
-        limit(pageLimit + 1),
       );
+      q = this.applyVisibility(q, visibility);
+      q = query(q, orderBy('createdAt', 'desc'), startAfter(cursor), limit(pageLimit + 1));
     }
 
     const snapshot = await getDocs(q);
@@ -139,12 +163,12 @@ export class PropertyService {
     };
   }
 
-  async getAvailableProperties(): Promise<Property[]> {
-    return this.getAllProperties({ status: 'disponible', isActive: true });
+  async getAvailableProperties(visibility: PropertyVisibility = 'public'): Promise<Property[]> {
+    return this.getAllProperties({ status: 'disponible', isActive: true, visibility });
   }
 
-  async getFeaturedProperties(): Promise<Property[]> {
-    return this.getAllProperties({ isFeatured: true, isActive: true });
+  async getFeaturedProperties(visibility: PropertyVisibility = 'public'): Promise<Property[]> {
+    return this.getAllProperties({ isFeatured: true, isActive: true, visibility });
   }
 
   async uploadPropertyImage(

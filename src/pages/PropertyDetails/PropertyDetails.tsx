@@ -62,11 +62,13 @@ const getPropertyTypeLabel = (type: string) => {
 // Helper function to get status color and label
 const getStatusInfo = (status: string) => {
   const statusMap: {
-    [key: string]: { label: string; color: 'success' | 'warning' | 'error' | 'default' };
+    [key: string]: { label: string; color: 'success' | 'warning' | 'error' | 'default' | 'info' };
   } = {
     disponible: { label: 'Disponible', color: 'success' },
-    ocupado: { label: 'Ocupado', color: 'error' },
-    pendiente: { label: 'Pendiente', color: 'warning' },
+    vendido: { label: 'Vendido', color: 'default' },
+    arrendado: { label: 'Arrendado', color: 'info' },
+    reservado: { label: 'Reservado', color: 'warning' },
+    no_disponible: { label: 'No disponible', color: 'error' },
   };
   return statusMap[status] || { label: status, color: 'default' };
 };
@@ -142,6 +144,18 @@ export const PropertyDetails = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      {property.status === 'no_disponible' && (
+        <Box sx={{ mb: 4, p: 3, bgcolor: 'error.light', borderRadius: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            Propiedad no disponible
+          </Typography>
+          <Typography variant="body2">
+            Esta propiedad no se encuentra disponible actualmente. Por favor vuelve más tarde o
+            contáctanos para conocer otras opciones.
+          </Typography>
+        </Box>
+      )}
+
       {isIncomplete && (
         <Box sx={{ mb: 4, p: 3, bgcolor: 'warning.light', borderRadius: 2 }}>
           <Typography variant="h6" gutterBottom>

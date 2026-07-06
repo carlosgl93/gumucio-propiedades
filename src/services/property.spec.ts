@@ -109,4 +109,18 @@ describe('PropertyService.formatPropertyData', () => {
     expect(result.createdAt).toBeInstanceOf(Date);
     expect(result.updatedAt).toBeInstanceOf(Date);
   });
+
+  it('preserves no_disponible status from the document', () => {
+    const result = format(
+      {
+        title: 'Casa retirada',
+        status: 'no_disponible',
+        createdAt: { toDate: () => new Date('2026-07-01') },
+        updatedAt: { toDate: () => new Date('2026-07-01') },
+      },
+      'hidden-1',
+    ) as Record<string, unknown>;
+
+    expect(result.status).toBe('no_disponible');
+  });
 });

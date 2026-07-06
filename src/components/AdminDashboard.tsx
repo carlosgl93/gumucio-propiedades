@@ -64,9 +64,16 @@ export const AdminDashboard = () => {
   const { logout, user } = useAuth();
 
   // TanStack Query hooks
-  const { data: properties = [], isLoading, error, refetch } = useProperties();
+  const {
+    data: properties = [],
+    isLoading,
+    error,
+    refetch,
+  } = useProperties({
+    visibility: 'admin',
+  });
 
-  const { stats, isLoading: statsLoading } = usePropertyStats();
+  const { stats, isLoading: statsLoading } = usePropertyStats('admin');
   const deleteProperty = useDeleteProperty();
 
   const handleCreateProperty = () => {
@@ -131,6 +138,8 @@ export const AdminDashboard = () => {
         return 'info';
       case 'reservado':
         return 'warning';
+      case 'no_disponible':
+        return 'error';
       default:
         return 'default';
     }
@@ -146,6 +155,8 @@ export const AdminDashboard = () => {
         return 'Arrendado';
       case 'reservado':
         return 'Reservado';
+      case 'no_disponible':
+        return 'No disponible';
       default:
         return status;
     }

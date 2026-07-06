@@ -82,6 +82,7 @@ const statuses = [
   { value: 'vendido', label: 'Vendido' },
   { value: 'arrendado', label: 'Arrendado' },
   { value: 'reservado', label: 'Reservado' },
+  { value: 'no_disponible', label: 'No disponible' },
 ];
 
 const currencies = [
@@ -491,9 +492,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h5">
-            {property ? 'Editar Propiedad' : 'Nueva Propiedad'}
-          </Typography>
+          <Typography variant="h5">{property ? 'Editar Propiedad' : 'Nueva Propiedad'}</Typography>
           {property && (
             <Button
               variant="outlined"

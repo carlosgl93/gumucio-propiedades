@@ -1,33 +1,33 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DocumentSnapshot } from 'firebase/firestore';
 
-import { propertyService } from '@/services/property';
+import { PropertyVisibility, propertyService } from '@/services/property';
 
 import { Property } from '../models/property';
+
+export type PropertyFilters = {
+  status?: string;
+  propertyType?: string;
+  isActive?: boolean;
+  isFeatured?: boolean;
+  visibility?: PropertyVisibility;
+};
 
 // Query Keys
 export const propertyKeys = {
   all: ['properties'] as const,
   lists: () => [...propertyKeys.all, 'list'] as const,
-  list: (filters?: {
-    status?: string;
-    propertyType?: string;
-    isActive?: boolean;
-    isFeatured?: boolean;
-  }) => [...propertyKeys.lists(), { filters }] as const,
+  list: (filters?: PropertyFilters) => [...propertyKeys.lists(), { filters }] as const,
   details: () => [...propertyKeys.all, 'detail'] as const,
   detail: (id: string) => [...propertyKeys.details(), id] as const,
-  available: () => [...propertyKeys.all, 'available'] as const,
-  featured: () => [...propertyKeys.all, 'featured'] as const,
+  available: (visibility: PropertyVisibility = 'public') =>
+    [...propertyKeys.all, 'available', visibility] as const,
+  featured: (visibility: PropertyVisibility = 'public') =>
+    [...propertyKeys.all, 'featured', visibility] as const,
 };
 
 // Get all properties
-export const useProperties = (filters?: {
-  status?: string;
-  propertyType?: string;
-  isActive?: boolean;
-  isFeatured?: boolean;
-}) => {
+export const useProperties = (filters?: PropertyFilters) => {
   return useQuery({
     queryKey: propertyKeys.list(filters),
     queryFn: () => propertyService.getAllProperties(filters),
@@ -36,27 +36,27 @@ export const useProperties = (filters?: {
 };
 
 // Get available properties
-export const useAvailableProperties = () => {
+export const useAvailableProperties = (visibility: PropertyVisibility = 'public') => {
   return useQuery({
-    queryKey: propertyKeys.available(),
-    queryFn: () => propertyService.getAvailableProperties(),
+    queryKey: propertyKeys.available(visibility),
+    queryFn: () => propertyService.getAvailableProperties(visibility),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
-export const useAllProperties = () => {
+export const useAllProperties = (visibility: PropertyVisibility = 'public') => {
   return useQuery({
-    queryKey: propertyKeys.all,
-    queryFn: () => propertyService.getAllProperties(),
+    queryKey: [...propertyKeys.all, 'all', visibility],
+    queryFn: () => propertyService.getAllProperties({ visibility }),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
 // Get featured properties
-export const useFeaturedProperties = () => {
+export const useFeaturedProperties = (visibility: PropertyVisibility = 'public') => {
   return useQuery({
-    queryKey: propertyKeys.featured(),
-    queryFn: () => propertyService.getFeaturedProperties(),
+    queryKey: propertyKeys.featured(visibility),
+    queryFn: () => propertyService.getFeaturedProperties(visibility),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
@@ -139,18 +139,25 @@ export const useDeletePropertyImage = () => {
   });
 };
 
-export const usePropertiesCount = (type: 'rent' | 'sale') =>
+export const usePropertiesCount = (
+  type: 'rent' | 'sale',
+  visibility: PropertyVisibility = 'public',
+) =>
   useQuery({
-    queryKey: [...propertyKeys.all, 'count', type],
-    queryFn: () => propertyService.getPropertiesCount(type, true),
+    queryKey: [...propertyKeys.all, 'count', type, visibility],
+    queryFn: () => propertyService.getPropertiesCount(type, true, visibility),
     staleTime: 5 * 60 * 1000,
   });
 
-export const useInfiniteProperties = (type: 'rent' | 'sale', pageSize: number) => {
+export const useInfiniteProperties = (
+  type: 'rent' | 'sale',
+  pageSize: number,
+  visibility: PropertyVisibility = 'public',
+) => {
   const result = useInfiniteQuery({
-    queryKey: [...propertyKeys.all, 'infinite', type, pageSize],
+    queryKey: [...propertyKeys.all, 'infinite', type, pageSize, visibility],
     queryFn: ({ pageParam }) =>
-      propertyService.getPropertiesPaginated(type, true, pageSize, pageParam ?? null),
+      propertyService.getPropertiesPaginated(type, true, pageSize, pageParam ?? null, visibility),
     initialPageParam: null as DocumentSnapshot | null,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.lastDoc : undefined),
     staleTime: 5 * 60 * 1000,
@@ -162,14 +169,15 @@ export const useInfiniteProperties = (type: 'rent' | 'sale', pageSize: number) =
 };
 
 // hooks/usePropertyStats.ts
-export const usePropertyStats = () => {
-  const { data: properties = [], isLoading } = useProperties();
+export const usePropertyStats = (visibility: PropertyVisibility = 'admin') => {
+  const { data: properties = [], isLoading } = useProperties({ visibility });
 
   const stats = {
     total: properties.length,
     available: properties.filter((p: Property) => p.status === 'disponible' && p.isActive).length,
     sold: properties.filter((p: Property) => p.status === 'vendido').length,
     featured: properties.filter((p: Property) => p.isFeatured).length,
+    unavailable: properties.filter((p: Property) => p.status === 'no_disponible').length,
   };
 
   return { stats, isLoading };
