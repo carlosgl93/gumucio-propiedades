@@ -363,6 +363,7 @@ export const AdminDashboard = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Título</TableCell>
+                    <TableCell>Propietario</TableCell>
                     <TableCell>Tipo</TableCell>
                     <TableCell>Precio</TableCell>
                     <TableCell>Estado</TableCell>
@@ -375,7 +376,7 @@ export const AdminDashboard = () => {
                 <TableBody>
                   {filteredProperties.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} align="center">
+                      <TableCell colSpan={9} align="center">
                         <Typography color="text.secondary">
                           {searchQuery
                             ? 'No se encontraron propiedades con ese criterio de búsqueda'
@@ -401,6 +402,7 @@ export const AdminDashboard = () => {
                             {property.title || 'Sin título'}
                           </Typography>
                         </TableCell>
+                        <TableCell>{property.ownerName || '-'}</TableCell>
                         <TableCell>
                           {property.propertyType
                             ? property.propertyType.charAt(0).toUpperCase() +

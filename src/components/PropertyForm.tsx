@@ -116,6 +116,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
   const [formData, setFormData] = useState<Partial<Property>>({
     title: '',
     description: '',
+    ownerName: '',
     type: 'rent',
     price: 0,
     currency: 'CLP',
@@ -423,8 +424,14 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Normalizar ownerName: vacío -> undefined para no contaminar Firestore
+    const payload: Partial<Property> = {
+      ...formData,
+      ownerName: formData.ownerName?.trim() || undefined,
+    };
+
     // Validate form
-    const validation = validateProperty(formData);
+    const validation = validateProperty(payload);
     if (!validation.isValid) {
       setValidationErrors(validation.errors);
       setSnackbar({
@@ -440,25 +447,25 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
         // Update existing property
         await updateProperty.mutateAsync({
           id: property.id,
-          updates: formData,
+          updates: payload,
         });
         setSnackbar({
           open: true,
           message: 'Propiedad actualizada correctamente',
           severity: 'success',
         });
-        onSave({ ...property, ...formData } as Property);
+        onSave({ ...property, ...payload } as Property);
       } else {
         // Create new property
         const id = await createProperty.mutateAsync(
-          formData as Omit<Property, 'id' | 'createdAt' | 'updatedAt'>,
+          payload as Omit<Property, 'id' | 'createdAt' | 'updatedAt'>,
         );
         setSnackbar({
           open: true,
           message: 'Propiedad creada correctamente',
           severity: 'success',
         });
-        onSave({ ...formData, id } as Property);
+        onSave({ ...payload, id } as Property);
       }
     } catch (err) {
       console.error('Error saving property:', err);
@@ -678,6 +685,29 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                         label="Destacada"
                       />
                     </Box>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Propietario */}
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Propietario
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Propietario"
+                      value={formData.ownerName ?? ''}
+                      onChange={(e) => handleInputChange('ownerName', e.target.value)}
+                      error={hasFieldError(validationErrors, 'ownerName')}
+                      helperText={getFieldError(validationErrors, 'ownerName')}
+                    />
                   </Grid>
                 </Grid>
               </CardContent>
