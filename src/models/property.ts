@@ -3,6 +3,7 @@ export interface Property {
   id?: string;
   title: string;
   description: string;
+  ownerName?: string; // Nombre del propietario (solo visible en backoffice)
   type: 'sale' | 'rent';
   price: number;
   currency: 'CLP' | 'UF';
@@ -51,6 +52,7 @@ properties/ (collection)
   ├── {propertyId}/ (document)
       ├── title: string
       ├── description: string
+      ├── ownerName: string (opcional, solo visible en backoffice)
       ├── price: number
       ├── currency: string
       ├── propertyType: string
