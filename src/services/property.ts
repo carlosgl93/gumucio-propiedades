@@ -256,6 +256,7 @@ export class PropertyService {
       updatedAt: data.updatedAt?.toDate() || new Date(),
       isActive: data.isActive ?? true,
       isFeatured: data.isFeatured ?? false,
+      ownerName: data.ownerName,
     };
   }
 }
