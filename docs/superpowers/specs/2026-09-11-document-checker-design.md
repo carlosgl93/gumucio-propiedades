@@ -25,9 +25,10 @@ Gumucio Propiedades needs to detect forged tenant documents (DICOM/Equifax certi
 - Liveness / selfie check — requires tenant upload
 - Async / background processing
 - Storage auto-deletion / retention policy
-- Ley 19.628 explicit consent UI (defer; MVP says "verificación interna")
+- Ley 19.628 explicit consent UI (defer; MVP logs the gap, v2 adds checkbox)
 - Multiple document types beyond DICOM + liquidación
 - Aggregate cross-document "background check" report
+- SII registry lookup for employer RUT validation (format-only check in MVP)
 
 ## Patterns to Mirror
 
@@ -77,13 +78,16 @@ No new client-side libs beyond MUI primitives.
 | File | Purpose |
 |---|---|
 | `handler.ts` | Express handler. Parses multipart, runs pipeline, returns JSON. ~80 LOC |
-| `ela.ts` | `elaScore(pngBuf): number` ~40 LOC |
-| `extractors/types.ts` | `ExtractedDicom`, `ExtractedLiquidacion`, `DocType='dicom'\|'liquidacion'` ~30 LOC |
+| `ela.ts` | `elaRegional(pngBuf): { global: number, maxCell: number }`. Re-encode JPEG quality 90, split into 4×4 grid, mean abs diff per cell. Returns both global mean and worst cell. ~60 LOC |
+| `extractors/types.ts` | `ExtractedDicom`, `ExtractedLiquidacion`, `DocType='dicom'\|'liquidacion'`, `ApplicantContext` ~40 LOC |
 | `extractors/dicom.ts` | `extractDicom(text): ExtractedDicom` (RUT mod-11, name, fechaEmision, plazoHistorico, protestos) ~80 LOC |
 | `extractors/liquidacion.ts` | `extractLiquidacion(text): ExtractedLiquidacion` (employer RUT, grossIncome, netIncome, period) ~80 LOC |
 | `extractors/index.ts` | `extract(text, type)` dispatcher ~20 LOC |
 | `rules/types.ts` | `Flag`, `Verdict`, `VerificationResult` ~30 LOC |
-| `rules/score.ts` | `score(result, monthlyRent): { score, verdict, flags[] }` weights: RUT-valid 20, ELA<0.08 30, fields-present 30, income/rent ratio 20 ~80 LOC |
+| `rules/crossCheck.ts` | `crossCheck(extracted, applicant): Flag[]` — verifies extracted RUT/name vs applicant context. For liquidación: employer RUT format + name-vs-RUT coherence. ~60 LOC |
+| `rules/llmEval.ts` | `llmEvaluate(pngBuf, extracted, applicant): Promise<{ score: 0-15, flags: string[] }>`. Calls MiniMax M3 vision API with (rendered PNG + text). 10s timeout. Returns null on API failure (caller re-normalizes). ~80 LOC |
+| `rules/llmPrompt.ts` | `buildLlmPrompt(extracted, applicant, type): { text: string, imageBase64: string }` — mirrors `functions/src/prompt.ts` pattern. ~50 LOC |
+| `rules/score.ts` | `score(result, monthlyRent): { score, verdict, flags[] }`. Weights (revised after adversarial review): RUT-valid 15, ELA-regional 25, fields-present 15, cross-check 20, employer-format 10, llm-eval 15. Re-normalizes if LLM unavailable. Thresholds 90/70. ~100 LOC |
 | `rules/index.ts` | Public re-exports ~10 LOC |
 
 ### Client (`src/sections/Postulaciones/`)
@@ -107,7 +111,8 @@ No new client-side libs beyond MUI primitives.
 | `src/pages/AdminDashboard/AdminDashboard.tsx` | Add `<Tab label="Postulaciones">` between existing tabs |
 | `firestore.rules` | New `postulaciones` + subcollection rules |
 | `storage.rules` | New `postulaciones/{id}/{file=**}` rule (admin only, ≤10MB, pdf) |
-| `functions/package.json` | Add `pdf-parse`, `pdfjs-dist`, `sharp`, `multer`, `@types/multer` |
+| `functions/package.json` | Add `pdf-parse`, `pdfjs-dist`, `sharp`, `multer`, `@types/multer`, MiniMax M3 SDK (TBD: confirm package name) |
+| `functions/.env` (or secrets) | Add `MINIMAX_API_KEY` for vision LLM call |
 
 ### Rules of the road
 
@@ -172,8 +177,12 @@ postulaciones/{id}
 | Multipart parse error | Toast: "No se pudo leer el archivo" | 400, log via `functions.logger` |
 | `pdf-parse` throws | Toast: "PDF corrupto o protegido" | 422, return `{ verdict:'fail', flags:['pdf_unreadable'] }` |
 | `pdfjs-dist` render throws | Same | 422, flag `pdf_unrenderable` |
-| ELA timeout (>8s) | Verdict: 'warn', flag `ela_timeout` | Continue without ELA score |
+| ELA timeout (>8s) | Verdict: 'warn', flag `ela_timeout` | Continue without ELA score (regional weights drop, others re-normalize to 100) |
 | Field extractor returns nulls | Verdict reflects missing critical fields | `rut_invalid`, `rut_missing`, `field_missing:<name>` |
+| Cross-check fails (name/RUT mismatch) | Verdict reflects with flag `identity_mismatch` | Cross-check weight → 0; admin sees mismatch in extractedFields vs applicant |
+| LLM eval timeout (>10s) | Verdict proceeds without LLM signal | Flag `llm_unavailable`; LLM weight dropped, others re-normalize to 100 |
+| LLM eval returns invalid JSON | Same as timeout | Retry once; second failure → `llm_unavailable` flag |
+| LLM eval returns low confidence | Verdict reflects partial LLM weight (proportional to confidence field) | `llm_low_confidence` flag |
 | Cold-start >12s | Spinner copy: "Analizando (puede tardar la primera vez)" | Pin min-instances=1 in production deploy |
 | Storage upload fails after verify | Toast: "Verificación OK pero no se guardó. Reintentar." | Client re-uses VerificationResult from memory; retries upload |
 | Firestore write fails after upload | Toast: "Archivo guardado pero falta registro" | Returns Storage URL + error; admin retries write |
@@ -191,10 +200,13 @@ postulaciones/{id}
 
 | Module | Tests |
 |---|---|
-| `ela.ts` | known-clean PDF renders score <0.05; manipulated image >0.10; empty buffer → 0 |
+| `ela.ts` | clean PDF → global<0.05 AND maxCell<0.05; small-region edit (5% area) → global<0.08 BUT maxCell>0.15; empty buffer → 0,0 |
 | `extractors/dicom.ts` | sample text → all fields extracted; missing RUT → null + flag candidate; invalid check digit → null |
 | `extractors/liquidacion.ts` | sample fixture → gross/net/employer extracted; text with one field → only that field |
-| `rules/score.ts` | RUT valid + ELA low + fields + ratio OK → 'pass'; one fail → 'warn'; two fails → 'fail'; income<rent×0.3 → flag `income_below_threshold` |
+| `rules/crossCheck.ts` | matching applicant name/RUT → no flags; mismatched name → `identity_mismatch` flag; missing fields → null-tolerance flag |
+| `rules/llmEval.ts` | mocked MiniMax SDK: success returns valid `{score, flags}`; timeout returns null + `llm_unavailable`; malformed JSON retries once then null |
+| `rules/llmPrompt.ts` | deterministic prompt strings for snapshot testing; image base64 well-formed |
+| `rules/score.ts` | all-pass → 100, verdict='pass'; LLM weight dropped → re-normalizes other weights to 100; cross-check fail → 'warn'; employer-format fail + ELA-fail → 'fail'; thresholds 90/70 enforced |
 | `models/application.ts` | type guards; optional `monthlyRent` defaults |
 | `services/application.ts` | mocked Firestore: create/list/addDocument happy + write-error paths |
 
@@ -236,13 +248,15 @@ firebase deploy --only functions # smoke deploy
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| False positives block legitimate tenants | Medium | Weighted scoring shows partial concerns as `warn` not `fail`; admin always confirms final status |
-| False negatives let forged docs through | Medium | MVP scope: docs with score<60 still require admin override; no automated approval path |
+| False positives block legitimate tenants | Medium | Threshold raised to 90 pass / 70 warn; partial concerns surface as flags; admin always confirms final status (no auto-approve) |
+| False negatives let forged docs through | Medium | Cross-check (name/RUT) + ELA regional + LLM eval cover main scenarios (identity theft, small-region edits, AI-generated). Documented remaining gaps: sophisticated AI, SII employer registry check |
 | Functions cold-start latency | High on first deploy | Pin min-instances=1; spinner copy sets expectations |
 | `sharp` native binary not supported on Functions runtime | Low | Functions 2nd gen supports Node 20 with custom binaries; deploy early to validate |
 | `pdfjs-dist` server-side bundle size | Medium | Tree-shake to legacy build only; Functions2 allows 1GB bundled |
 | PDF parser misreads real DICOM | Medium | Per-extractor unit tests with redacted fixtures; iterate on regex |
-| Ley 19.628 compliance complaint | Medium | MVP only stores docs internal to admin; v2 adds consent UI + retention policy |
+| Ley 19.628 compliance complaint (PII sent to MiniMax API) | Medium-High | Tenant PII (RUT, name, employer, income) sent to third-party LLM API as raw text + image. No anonymization by user request. v2 must add: consent checkbox in postulación form, retention policy, DPA with MiniMax. For MVP, document prominently in admin UI |
+| MiniMax API outage or rate-limit | Medium | LLM weight dropped from score (re-normalizes); verdict still produced via deterministic checks; admin sees `llm_unavailable` flag |
+| LLM hallucination (false-positive "forged") | Low-Medium | Low-confidence responses surface `llm_low_confidence` flag; admin can override; LLM weight proportional to model confidence |
 | Admin uploads wrong tenant's doc | Medium | Postulación modal requires explicit tenant selection before upload |
 
 ## Acceptance criteria
@@ -250,7 +264,10 @@ firebase deploy --only functions # smoke deploy
 - [ ] Admin can create a Postulación from a property, with monthlyRent auto-filled
 - [ ] Admin can upload a DICOM PDF and see verdict within 15s
 - [ ] Admin can upload a liquidación PDF and see verdict within 15s
-- [ ] Verdict panel shows score, verdict (pass/warn/fail), flags[], and extracted fields
+- [ ] Verdict panel shows score, verdict (pass/warn/fail), flags[], extracted fields, AND cross-check diff vs applicant
+- [ ] Cross-check fires `identity_mismatch` when extracted name/RUT differs from applicant
+- [ ] LLM eval runs; failure (timeout/5xx/invalid JSON) is non-fatal — verdict still produced with `llm_unavailable` flag
+- [ ] Admin still confirms postulación manually (no auto-approve) regardless of verdict
 - [ ] Aggregate postulación status updates when docs change
 - [ ] All unit tests pass; coverage ≥80% on new modules
 - [ ] E2E test for happy path passes
@@ -258,6 +275,7 @@ firebase deploy --only functions # smoke deploy
 - [ ] `pnpm ts:check`, `pnpm lint:check`, `pnpm test:unit`, `pnpm test:e2e` all green
 - [ ] Firestore rules deny non-admin reads/writes (verified via emulator)
 - [ ] Storage rules deny non-admin writes (verified via emulator)
+- [ ] `MINIMAX_API_KEY` set via Firebase secrets (never committed)
 
 ## Out of scope (deferred)
 
