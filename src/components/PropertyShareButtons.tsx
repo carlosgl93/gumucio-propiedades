@@ -24,6 +24,7 @@ import {
 } from '@mui/material';
 
 import { Property } from '@/models';
+import { formatLocation } from '@/utils/formatters';
 
 // import { generateInstagramStoryImage } from '@/utils/generateInstagramImage';
 
@@ -72,7 +73,7 @@ export const PropertyShareButtons = ({ property, variant = 'full' }: PropertySha
   };
 
   // WhatsApp-specific share text (includes image URL for better previews)
-  const locationText = [commune, city].filter(Boolean).join(', ');
+  const locationText = formatLocation(commune, city);
   const whatsappText = `${title}
 ${formatPrice(price, currency)}${property.type === 'rent' ? '/mes' : ''}
 ${locationText ? `📍 ${locationText}` : ''}

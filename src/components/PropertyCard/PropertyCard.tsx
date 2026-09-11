@@ -5,23 +5,13 @@ import { Bathtub, Bed, DirectionsCar, LocationOn, SquareFoot } from '@mui/icons-
 import { Box, Card, CardContent, CardMedia, Chip, Skeleton, Typography } from '@mui/material';
 
 import { Property } from '@/models';
+import { formatLocation, formatPrice } from '@/utils/formatters';
 
 import { PropertyShareButtons } from '../PropertyShareButtons';
 
 interface PropertyCardProps {
   property: Property;
 }
-
-const formatPrice = (price: number, currency: string) => {
-  if (currency === 'CLP') {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-    }).format(price);
-  }
-  return `${currency} ${price.toLocaleString()}`;
-};
 
 export const PropertyCard = ({ property }: PropertyCardProps) => {
   const navigate = useNavigate();
@@ -115,7 +105,7 @@ export const PropertyCard = ({ property }: PropertyCardProps) => {
           <Box display="flex" alignItems="center" mb={2} color="text.secondary">
             <LocationOn sx={{ fontSize: 16, mr: 0.5 }} />
             <Typography variant="body2" noWrap>
-              {[property.address?.commune, property.address?.city].filter(Boolean).join(', ')}
+              {formatLocation(property.address?.commune, property.address?.city)}
             </Typography>
           </Box>
         )}

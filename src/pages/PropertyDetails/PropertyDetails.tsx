@@ -33,20 +33,9 @@ import Loading from '@/components/Loading';
 import { PropertyShareButtons } from '@/components/PropertyShareButtons';
 import { email, phoneNumber, whatsappNumber } from '@/config';
 import { useProperty } from '@/hooks/useProperties';
+import { formatLocation, formatPrice } from '@/utils/formatters';
 
 import { SectionTitle } from '../Home/Home';
-
-// Helper function to format price
-const formatPrice = (price: number, currency: string) => {
-  if (currency === 'CLP') {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-    }).format(price);
-  }
-  return `${currency} ${price.toLocaleString()}`;
-};
 
 // Helper function to get property type in Spanish
 const getPropertyTypeLabel = (type: string) => {
@@ -105,8 +94,9 @@ export const PropertyDetails = () => {
   };
 
   const handleSendEmail = () => {
+    const locationText = formatLocation(property?.address?.commune, property?.address?.city);
     window.open(
-      `mailto:${email}?subject=Consulta sobre propiedad: ${property?.title || 'Sin título'}&body=Hola, me interesa la propiedad: ${property?.address?.street || ''}, ${property?.address?.commune || ''}, ${property?.address?.city || ''}`,
+      `mailto:${email}?subject=Consulta sobre propiedad: ${property?.title || 'Sin título'}&body=Hola, me interesa la propiedad: ${property?.address?.street || ''}${locationText ? `, ${locationText}` : ''}`,
     );
   };
 

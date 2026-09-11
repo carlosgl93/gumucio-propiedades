@@ -43,6 +43,7 @@ import {
 } from '@mui/material';
 
 import { Property } from '@/models';
+import { formatPrice } from '@/utils/formatters';
 
 import { useAuth } from '../hooks/useAuth';
 import { useDeleteProperty, useProperties, usePropertyStats } from '../hooks/useProperties';
@@ -160,11 +161,6 @@ export const AdminDashboard = () => {
       default:
         return status;
     }
-  };
-
-  const formatPrice = (price: number, currency: string) => {
-    const formatter = new Intl.NumberFormat('es-CL');
-    return `${formatter.format(price)} ${currency}`;
   };
 
   // Filter properties based on search query - memoized for performance

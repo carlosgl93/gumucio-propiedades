@@ -1,5 +1,7 @@
 import { Property } from '@/models';
 
+import { formatLocation, formatPrice } from './formatters';
+
 /**
  * Generates an Instagram Story image (1080x1920px) with property details
  * @param property The property to generate the image for
@@ -55,7 +57,14 @@ export const generateInstagramStoryImage = async (property: Property): Promise<B
     // Title
     ctx.font = 'bold 60px Arial, sans-serif';
     const titleY = CANVAS_HEIGHT - 480;
-    wrapText(ctx, property.title || 'Propiedad disponible', CANVAS_WIDTH / 2, titleY, CANVAS_WIDTH - 100, 70);
+    wrapText(
+      ctx,
+      property.title || 'Propiedad disponible',
+      CANVAS_WIDTH / 2,
+      titleY,
+      CANVAS_WIDTH - 100,
+      70,
+    );
 
     // Price
     const formattedPrice = formatPrice(property.price || 0, property.currency || 'CLP');
@@ -64,9 +73,7 @@ export const generateInstagramStoryImage = async (property: Property): Promise<B
 
     // Location
     ctx.font = '40px Arial, sans-serif';
-    const commune = property.address?.commune || '';
-    const city = property.address?.city || '';
-    const locationText = [commune, city].filter(Boolean).join(', ');
+    const locationText = formatLocation(property.address?.commune, property.address?.city);
     if (locationText) {
       ctx.fillText(locationText, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 280);
     }
@@ -164,21 +171,4 @@ const wrapText = (
     }
   }
   ctx.fillText(line, x, currentY);
-};
-
-/**
- * Formats price for display
- * @param price The price to format
- * @param currency The currency (CLP or UF)
- * @returns Formatted price string
- */
-const formatPrice = (price: number, currency: string): string => {
-  if (currency === 'CLP') {
-    return new Intl.NumberFormat('es-CL', {
-      style: 'currency',
-      currency: 'CLP',
-      minimumFractionDigits: 0,
-    }).format(price);
-  }
-  return `${currency} ${price.toLocaleString('es-CL')}`;
 };

@@ -3,6 +3,7 @@
  * Handles automatic currency conversion for PDF generation
  * Uses exchangerate-api.com for real-time rates with 24-hour cache
  */
+import { formatPrice } from './formatters';
 
 interface ExchangeRates {
   [currency: string]: number;
@@ -127,46 +128,6 @@ export async function formatPriceWithConversion(
 
   // Return original if conversion failed
   return formattedPrice;
-}
-
-/**
- * Format price based on currency
- */
-function formatPrice(amount: number, currency: string): string {
-  switch (currency) {
-    case 'CLP':
-      return new Intl.NumberFormat('es-CL', {
-        style: 'currency',
-        currency: 'CLP',
-        minimumFractionDigits: 0,
-      }).format(amount);
-
-    case 'USD':
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-      }).format(amount);
-
-    case 'NIO':
-      return new Intl.NumberFormat('es-NI', {
-        style: 'currency',
-        currency: 'NIO',
-        minimumFractionDigits: 2,
-      })
-        .format(amount)
-        .replace('C$', 'C$');
-
-    case 'UF':
-      // UF (Unidad de Fomento) - Chilean unit
-      return `UF ${amount.toLocaleString('es-CL', {
-        minimumFractionDigits: 3,
-        maximumFractionDigits: 3,
-      })}`;
-
-    default:
-      return `${currency} ${amount.toLocaleString()}`;
-  }
 }
 
 /**
