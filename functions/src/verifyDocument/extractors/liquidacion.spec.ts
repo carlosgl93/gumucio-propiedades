@@ -23,4 +23,10 @@ describe('extractLiquidacion', () => {
     expect(r.employerName).toBeNull();
     expect(r.netIncome).toBeNull();
   });
+
+  it('skips invalid worker RUT when finding employer RUT (skip=1 path)', () => {
+    const r = extractLiquidacion(fx('liquidacion-employer-only.txt'));
+    expect(r.rut).toBeNull();
+    expect(r.employerRut).toBe('76123456-0');
+  });
 });

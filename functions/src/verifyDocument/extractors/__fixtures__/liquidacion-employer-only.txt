@@ -1,0 +1,7 @@
+LIQUIDACION DE SUELDO
+Trabajador RUT: 11.111.111-9
+Empleador: EMPRESA XYZ S.A.
+Empleador RUT: 76.123.456-0
+Periodo: 2026-08
+Sueldo bruto: 1.500.000
+Sueldo liquido: 1.220.000
