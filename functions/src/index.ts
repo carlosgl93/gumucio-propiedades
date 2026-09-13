@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 import * as admin from 'firebase-admin';
-import { onRequest } from 'firebase-functions/v2/https';
+import * as functions from 'firebase-functions';
 import { defineSecret } from 'firebase-functions/params';
 import cors from 'cors';
 import express from 'express';
@@ -21,4 +21,4 @@ app.use(express.json());
 app.post('/newDiaryEntry', newDiaryEntry);
 app.post('/verifyDocument', upload.single('file'), verifyDocumentHandler);
 
-export const api = onRequest({ secrets: [minimaxApiKey] }, app);
+export const api = functions.runWith({ secrets: [minimaxApiKey] }).https.onRequest(app);
