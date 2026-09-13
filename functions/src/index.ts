@@ -5,6 +5,7 @@ import cors from 'cors';
 import express from 'express';
 
 import { newDiaryEntry } from './newDiaryEntry';
+import { verifyDocumentHandler, upload } from './verifyDocument/handler';
 
 dotenv.config();
 admin.initializeApp();
@@ -15,5 +16,6 @@ app.use(cors({ origin: true }));
 app.use(express.json());
 
 app.post('/newDiaryEntry', newDiaryEntry);
+app.post('/verifyDocument', upload.single('file'), verifyDocumentHandler);
 
 export const api = functions.https.onRequest(app);
