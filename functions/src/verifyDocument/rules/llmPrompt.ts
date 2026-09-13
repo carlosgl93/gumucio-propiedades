@@ -14,13 +14,13 @@ Look for:
 - Signs of AI-generated synthetic PDFs (perfect typography, missing micro-details typical of scans)
 - Format anomalies for the document type
 
-Respond with a single JSON object, no markdown, no code block:
+You may think step-by-step, but your FINAL reply must be ONLY a single JSON object, no markdown, no code block:
 {
   "score": <integer 0-15, where 15 = clearly authentic>,
   "flags": [<string codes like "ai_generated_suspected", "font_mismatch", "logo_missing", "text_image_inconsistent">],
   "confidence": <float 0.1-1.0>
 }
-Be conservative: if uncertain, lower the score. Only output the JSON.`;
+Be conservative: if uncertain, lower the score. The JSON object must be the last thing in your response.`;
 
 export function buildLlmPrompt(
   extracted: Record<string, unknown>,
