@@ -85,19 +85,15 @@ export const verifyDocumentHandler = async (req: Request, res: Response): Promis
     const docType = type as DocType;
 
     let text: string;
-    let pdfParser: PDFParse | undefined;
     try {
-      pdfParser = new PDFParse({ data: file.buffer });
-      const parsed = await pdfParser.getText();
+      const textParser = new PDFParse({ data: new Uint8Array(file.buffer) });
+      const parsed = await textParser.getText();
       text = parsed.text;
+      await textParser.destroy();
     } catch (err) {
       logger.warn('pdf-parse failed', err);
       res.status(422).json(FAIL_FLAGS.pdfUnreadable());
       return;
-    } finally {
-      if (pdfParser) {
-        try { await pdfParser.destroy(); } catch { /* ignore */ }
-      }
     }
 
     if (!applicantName || !applicantRut || !monthlyRent) {
@@ -113,27 +109,37 @@ export const verifyDocumentHandler = async (req: Request, res: Response): Promis
 
     let pngBuf: Buffer;
     try {
-      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-      const loadingTask = pdfjs.getDocument({ data: new Uint8Array(file.buffer) });
+      // Use pdfjs-dist@5 (matches the bundled worker version in pdf-parse@2.4.5).
+      // pdf-parse.getScreenshot() hits a DataCloneError on Node 22+ (pdf-parse#119),
+      // so we render directly via pdfjs-dist + @napi-rs/canvas (prebuilt, no node-gyp).
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      const { createCanvas } = await import('@napi-rs/canvas');
+      const loadingTask = pdfjsLib.getDocument({
+        data: new Uint8Array(file.buffer),
+        canvasFactory: {
+          create(w: number, h: number) {
+            const canvas = createCanvas(w, h);
+            return { canvas, context: canvas.getContext('2d') };
+          },
+          reset(canvasAndContext: { canvas: { width: number; height: number } }, w: number, h: number) {
+            canvasAndContext.canvas.width = w;
+            canvasAndContext.canvas.height = h;
+          },
+          destroy(canvasAndContext: { canvas: { width: number; height: number } }) {
+            canvasAndContext.canvas.width = 0;
+            canvasAndContext.canvas.height = 0;
+            (canvasAndContext.canvas as unknown as { _destroy?: () => void })._destroy?.();
+          },
+        },
+      } as never);
       const pdf = await loadingTask.promise;
       const page = await pdf.getPage(1);
       const viewport = page.getViewport({ scale: 1 });
-      const NodeCanvasFactory = (pdfjs as unknown as { NodeCanvasFactory: new () => unknown })
-        .NodeCanvasFactory;
-      const factory = new NodeCanvasFactory() as {
-        create: (w: number, h: number) => {
-          context: unknown;
-          canvas: { toBuffer: (enc: string) => Buffer };
-        };
-      };
-      const ctxCanvas = factory.create(viewport.width, viewport.height);
-      await page
-        .render({ canvasContext: ctxCanvas.context, viewport, canvasFactory: factory })
-        .promise;
-      const rawPng = ctxCanvas.canvas.toBuffer('image/png');
-      pngBuf = await sharp(rawPng).png().toBuffer();
-      if (typeof pdf.cleanup === 'function') await pdf.cleanup();
-      if (typeof pdf.destroy === 'function') await pdf.destroy();
+      const canvas = createCanvas(viewport.width, viewport.height);
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx as never, viewport }).promise;
+      pngBuf = await sharp(await canvas.encode('png')).png().toBuffer();
+      await pdf.destroy();
     } catch (err) {
       logger.warn('pdfjs render failed', err);
       res.status(422).json(FAIL_FLAGS.pdfUnrenderable());
@@ -148,7 +154,13 @@ export const verifyDocumentHandler = async (req: Request, res: Response): Promis
     const crossResult = crossCheckFor(docType, extractedRaw, applicant);
 
     const prompt = buildLlmPrompt(extracted, applicant, docType, pngBuf);
-    const llm = await llmEvaluate(pngBuf, prompt, docType);
+    let llm: Awaited<ReturnType<typeof llmEvaluate>>;
+    try {
+      llm = await llmEvaluate(pngBuf, prompt, docType);
+    } catch (err) {
+      logger.warn('llmEvaluate failed; scoring without LLM', err);
+      llm = null;
+    }
 
     const result = score({
       extracted,

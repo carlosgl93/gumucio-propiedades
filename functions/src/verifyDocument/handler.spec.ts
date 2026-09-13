@@ -21,20 +21,26 @@ vi.mock('pdf-parse', () => ({
 
 vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
   getDocument: vi.fn(),
-  NodeCanvasFactory: vi.fn().mockImplementation(() => ({
-    create: (_w: number, _h: number) => ({
-      context: {},
-      canvas: { toBuffer: () => TINY_PNG },
-    }),
+}));
+
+vi.mock('@napi-rs/canvas', () => ({
+  createCanvas: vi.fn().mockImplementation(() => ({
+    getContext: () => ({}),
+    encode: async () => TINY_PNG,
+    width: 100,
+    height: 100,
   })),
 }));
 
 import { PDFParse } from 'pdf-parse';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { createCanvas } from '@napi-rs/canvas';
 import { verifyDocumentHandler } from './handler';
 
 const mockPDFParse = vi.mocked(PDFParse);
 const mockGetDocument = vi.mocked(getDocument);
+// createCanvas referenced indirectly via vi.mock factory above
+void createCanvas;
 
 function buildApp() {
   const app = express();
@@ -92,7 +98,7 @@ describe('verifyDocumentHandler', () => {
       cleanup: () => undefined,
     };
     mockGetDocument.mockReturnValueOnce({
-      promise: Promise.resolve({ numPages: 1, getPage: () => Promise.resolve(fakePage) }),
+      promise: Promise.resolve({ numPages: 1, getPage: () => Promise.resolve(fakePage), destroy: async () => undefined }),
     } as unknown);
 
     const app = buildApp();
