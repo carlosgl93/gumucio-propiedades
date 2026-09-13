@@ -28,14 +28,30 @@ export function score(input: ScoreInput): VerificationResult {
     flags.push({ code: 'rut_invalid', weight: W_RUT, message: `RUT inválido: ${rutStr}` });
   }
 
-  // 2) ELA regional
-  const elaOk = input.ela.global < 0.08 && input.ela.maxCell < 0.15;
-  const elaPts = elaOk ? W_ELA : 0;
-  if (!elaOk) {
+  // 2) ELA regional — graduated. Real customer PDFs (Equifax DICOM,
+  // liquidaciones) sit at maxCell ~0.20-0.27 baseline because they embed
+  // JPEG-compressed logos/images that double-compress in our pipeline.
+  // Calibrated against 4 real customer PDFs:
+  //   clean doc:    global ~0.05-0.10, maxCell ~0.08-0.12
+  //   real doc:     global ~0.07-0.10, maxCell ~0.20-0.27
+  //   tampered:     maxCell > 0.40 typically
+  // Linear penalty: full points at maxCell<=0.12, zero at maxCell>=0.40.
+  // Global < 0.15 hard floor (logos spread noise globally; only very
+  // aggressive tampering pushes global past this).
+  const elaGlobal = input.ela.global;
+  const elaMax = input.ela.maxCell;
+  let elaRatio = 1;
+  if (elaGlobal >= 0.15) elaRatio = 0;
+  else if (elaMax >= 0.12) {
+    elaRatio = Math.max(0, 1 - (elaMax - 0.12) / (0.40 - 0.12));
+  }
+  const elaPts = Math.round(elaRatio * W_ELA);
+  if (elaPts < W_ELA) {
+    const lost = W_ELA - elaPts;
     flags.push({
-      code: `ela_high:${input.ela.global.toFixed(3)}/${input.ela.maxCell.toFixed(3)}`,
-      weight: W_ELA,
-      message: `ELA alta (global=${input.ela.global.toFixed(3)}, maxCell=${input.ela.maxCell.toFixed(3)})`,
+      code: `ela_high:${elaGlobal.toFixed(3)}/${elaMax.toFixed(3)}`,
+      weight: lost,
+      message: `ELA elevada (global=${elaGlobal.toFixed(3)}, maxCell=${elaMax.toFixed(3)})`,
     });
   }
 

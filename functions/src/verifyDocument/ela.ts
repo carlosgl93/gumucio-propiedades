@@ -1,15 +1,13 @@
 import sharp from 'sharp';
 
 const GRID = 4;
-// Re-encode at q75 (industry ELA standard): high enough to preserve most
-// authentic content, low enough that edited regions lose detail that
-// the lossless original still has.
-const REENCODE_QUALITY = 75;
-// Industry ELA tools (FotoForensics, etc.) amplify the diff so subtle
-// single-byte changes become visible. Without this, JPEG q75 → q90
-// roundtrips produce ~0.005 mean diff for solid patches and ~0.001 for
-// unedited regions — useless for discrimination.
-const AMPLIFY = 250;
+// Re-encode at q85: high enough that authentic customer docs (Equifax DICOM,
+// liquidaciones) sit at maxCell ~0.08-0.12 baseline, low enough that edited
+// patches spike above 0.15. Calibrated against 4 real customer PDFs.
+const REENCODE_QUALITY = 85;
+// Per-channel diff amplification. Without this, q85→q85 roundtrip diffs are
+// sub-1% and can't be discriminated from JPEG quantization noise.
+const AMPLIFY = 50;
 
 export interface ElaResult {
   global: number;

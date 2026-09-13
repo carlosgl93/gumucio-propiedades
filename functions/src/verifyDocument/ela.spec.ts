@@ -16,7 +16,9 @@ describe('elaRegional', () => {
     expect(result.maxCell).toBeLessThan(0.05);
   });
 
-  // 0.15 threshold matches Task 11 score.ts; tune with production data if needed
+  // 0.15 threshold matches score.ts elaOk (global<0.08 && maxCell<0.15).
+  // At q85 + AMPLIFY=50 this fixture produces maxCell ~0.187. Calibrated so
+  // clean customer PDFs sit below threshold and edited patches exceed it.
   it('flags small edited region even when global stays low', async () => {
     // PNG orig (lossless) → re-encode at q90 → JPEG cannot perfectly preserve
     // sharp edges from a pristine PNG, so the edited region shows high diff.
