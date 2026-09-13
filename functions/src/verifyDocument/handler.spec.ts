@@ -16,7 +16,7 @@ beforeAll(async () => {
 });
 
 vi.mock('pdf-parse', () => ({
-  default: vi.fn(),
+  PDFParse: vi.fn(),
 }));
 
 vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
@@ -29,11 +29,11 @@ vi.mock('pdfjs-dist/legacy/build/pdf.mjs', () => ({
   })),
 }));
 
-import pdfParse from 'pdf-parse';
+import { PDFParse } from 'pdf-parse';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { verifyDocumentHandler } from './handler';
 
-const mockPdfParse = vi.mocked(pdfParse);
+const mockPDFParse = vi.mocked(PDFParse);
 const mockGetDocument = vi.mocked(getDocument);
 
 function buildApp() {
@@ -65,7 +65,9 @@ describe('verifyDocumentHandler', () => {
   });
 
   it('returns 422 with pdf_unreadable flag when pdf-parse throws', async () => {
-    mockPdfParse.mockRejectedValueOnce(new Error('corrupt'));
+    mockPDFParse.mockImplementationOnce(() => {
+      throw new Error('corrupt');
+    });
     const app = buildApp();
     const res = await request(app)
       .post('/verifyDocument')
@@ -80,9 +82,10 @@ describe('verifyDocumentHandler', () => {
   });
 
   it('returns verdict on happy path', async () => {
-    mockPdfParse.mockResolvedValueOnce({
-      text: 'RUT: 12.345.678-5\nNombre: JUAN PEREZ',
-    });
+    mockPDFParse.mockImplementationOnce(() => ({
+      getText: async () => ({ text: 'RUT: 12.345.678-5\nNombre: JUAN PEREZ' }),
+      destroy: async () => undefined,
+    } as unknown as PDFParse));
     const fakePage = {
       getViewport: () => ({ width: 100, height: 100 }),
       render: () => ({ promise: Promise.resolve({} as unknown) }),

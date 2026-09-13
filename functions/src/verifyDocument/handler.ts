@@ -3,7 +3,7 @@ import { logger } from 'firebase-functions';
 import { defineSecret } from 'firebase-functions/params';
 import type { Request, Response } from 'express';
 import multer from 'multer';
-import pdfParse from 'pdf-parse';
+import { PDFParse } from 'pdf-parse';
 import sharp from 'sharp';
 
 const minimaxApiKey = defineSecret('MINIMAX_API_KEY');
@@ -85,13 +85,19 @@ export const verifyDocumentHandler = async (req: Request, res: Response): Promis
     const docType = type as DocType;
 
     let text: string;
+    let pdfParser: PDFParse | undefined;
     try {
-      const parsed = await pdfParse(file.buffer);
+      pdfParser = new PDFParse({ data: file.buffer });
+      const parsed = await pdfParser.getText();
       text = parsed.text;
     } catch (err) {
       logger.warn('pdf-parse failed', err);
       res.status(422).json(FAIL_FLAGS.pdfUnreadable());
       return;
+    } finally {
+      if (pdfParser) {
+        try { await pdfParser.destroy(); } catch { /* ignore */ }
+      }
     }
 
     if (!applicantName || !applicantRut || !monthlyRent) {
