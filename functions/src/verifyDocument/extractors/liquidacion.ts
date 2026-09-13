@@ -1,5 +1,5 @@
 import type { ExtractedLiquidacion } from './types';
-import { nthValidRut } from './rut';
+import { nthValidRut, RUT_RE, isValidRut } from './rut';
 
 // Employer name appears as the first non-empty line on most Chilean liquidaciones,
 // or after "Empleador:". Skip lines that match the document header (e.g.
@@ -61,9 +61,77 @@ function matchFirst(re: RegExp, text: string, group = 1): string | null {
   return m?.[group] ?? null;
 }
 
+// Worker RUT: labeled (RUT:, Rut Trabajador:, Trabajador RUT:). Fallback
+// heuristic: the RUT that appears within ~60 chars AFTER a worker-name
+// pattern (Sr./Sra. + capitalized name). This handles real PDFs where
+// the worker's name and RUT sit on the same line:
+//   "Sr. Alejandro Ramirez Valenzuela 17323127-K Dias Trabajados: ..."
+const WORKER_LABEL_RES: RegExp[] = [
+  /Rut\s+Trabajador[:\s]+(\d{1,2}\.?\d{3}\.?\d{3})-?([\dK])/i,
+  /Trabajador[:\s]+(?:Rut|RUT)[:\s]+(\d{1,2}\.?\d{3}\.?\d{3})-?([\dK])/i,
+  /\bRUT[:\s]+(\d{1,2}\.?\d{3}\.?\d{3})-?([\dK])/i,
+];
+
+// Employer RUT: labeled (Empleador RUT:, Razon Social RUT:, RUT Empresa:).
+// Fallback: the FIRST valid RUT that appears before any worker-name line.
+const EMPLOYER_LABEL_RES: RegExp[] = [
+  /Empleador\s+RUT[:\s]+(\d{1,2}\.?\d{3}\.?\d{3})-?([\dK])/i,
+  /Raz[oó]n\s+Social\s+RUT[:\s]+(\d{1,2}\.?\d{3}\.?\d{3})-?([\dK])/i,
+  /RUT\s+Empresa[:\s]+(\d{1,2}\.?\d{3}\.?\d{3})-?([\dK])/i,
+];
+
+function firstLabeledRut(reList: RegExp[], text: string): string | null {
+  for (const re of reList) {
+    const m = text.match(re);
+    if (m && isValidRut(m[1], m[2])) {
+      return `${m[1].replace(/\./g, '')}-${m[2]}`;
+    }
+  }
+  return null;
+}
+
+// Find the RUT that appears within `window` chars after a worker-name
+// marker (Sr./Sra.). Used as fallback when the liquidacion has no labels.
+function workerRutByNameContext(text: string): string | null {
+  const workerLineRe = /\bSr\.?\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){1,3}.{0,80}?(\d{1,2}\.?\d{3}\.?\d{3})-?([\dK])\b/i;
+  const m = text.match(workerLineRe);
+  if (m && isValidRut(m[1], m[2])) {
+    return `${m[1].replace(/\./g, '')}-${m[2]}`;
+  }
+  return null;
+}
+
+// Find the RUT that appears within `window` chars after a company-name
+// marker (S.A., SpA, Ltda). Fallback for unlabeled employer RUT.
+function employerRutByCompanyContext(text: string): string | null {
+  const companyLineRe = /\b[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑ0-9 .&\-]{2,80}?\s+(S\.?A\.?|SpA|Spa|Ltda\.?|Limitada|E\.I\.R\.L\.?)\b[^a-z]{0,80}?(\d{1,2}\.?\d{3}\.?\d{3})-?([\dK])/;
+  const m = text.match(companyLineRe);
+  if (m && isValidRut(m[2], m[3])) {
+    return `${m[2].replace(/\./g, '')}-${m[3]}`;
+  }
+  return null;
+}
+
 export function extractLiquidacion(text: string): ExtractedLiquidacion {
-  const rut = nthValidRut(text, 0);
-  const employerRut = nthValidRut(text, 1);
+  // Worker RUT: label first, then name-proximity, then positional
+  let rut = firstLabeledRut(WORKER_LABEL_RES, text);
+  if (!rut) rut = workerRutByNameContext(text);
+  if (!rut) rut = nthValidRut(text, 0);
+
+  // Employer RUT: label first, then company-name proximity
+  let employerRut = firstLabeledRut(EMPLOYER_LABEL_RES, text);
+  if (!employerRut) employerRut = employerRutByCompanyContext(text);
+  // Positional fallback: pick the first valid RUT that is NOT the worker RUT
+  if (!employerRut) {
+    for (const m of text.matchAll(RUT_RE)) {
+      if (!isValidRut(m[1], m[2])) continue;
+      const candidate = `${m[1].replace(/\./g, '')}-${m[2]}`;
+      if (candidate !== rut) {
+        employerRut = candidate;
+        break;
+      }
+    }
+  }
 
   // Try each employer pattern; first non-denylisted hit wins.
   const employerName = pickEmployerName(text);
