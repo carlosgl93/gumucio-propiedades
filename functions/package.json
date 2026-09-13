@@ -18,6 +18,7 @@
     "@google/genai": "^1.7.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "canvas": "^3.2.3",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "firebase-admin": "^12.6.0",
