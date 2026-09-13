@@ -1,0 +1,5 @@
+CERTIFICADO
+RUT: 99.999.999-0
+Nombre: PEDRO SOTO
+Fecha de emision: 2026-01-01
+Protestos: 0
