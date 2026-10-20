@@ -330,32 +330,60 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
 
       try {
         const uploadPromises = validFiles.map(async (file) => {
-          const result = await uploadImage.mutateAsync({
+          return uploadImage.mutateAsync({
             propertyId: formData.id!,
             file,
             caption: `Imagen ${(formData.images?.length || 0) + 1}`,
           });
-          return result;
         });
 
-        const uploadedImages = await Promise.all(uploadPromises);
+        const settledResults = await Promise.allSettled(uploadPromises);
+        const uploadedImages: PropertyImage[] = [];
+        const failedErrors: string[] = [];
 
-        setFormData((prev) => ({
-          ...prev,
-          images: [
-            ...(prev.images || []),
-            ...uploadedImages.map((img, index) => ({
-              ...img,
-              order: (prev.images?.length || 0) + index,
-            })),
-          ],
-        }));
-
-        setSnackbar({
-          open: true,
-          message: `${uploadedImages.length} ${uploadedImages.length === 1 ? 'imagen subida' : 'imágenes subidas'} correctamente`,
-          severity: 'success',
+        settledResults.forEach((res, i) => {
+          if (res.status === 'fulfilled') {
+            uploadedImages.push(res.value);
+          } else {
+            const reason = res.reason instanceof Error ? res.reason.message : 'Error desconocido';
+            failedErrors.push(`${validFiles[i].name}: ${reason}`);
+          }
         });
+
+        if (uploadedImages.length > 0) {
+          setFormData((prev) => ({
+            ...prev,
+            images: [
+              ...(prev.images || []),
+              ...uploadedImages.map((img, index) => ({
+                ...img,
+                order: (prev.images?.length || 0) + index,
+              })),
+            ],
+          }));
+        }
+
+        if (failedErrors.length === 0) {
+          setSnackbar({
+            open: true,
+            message: `${uploadedImages.length} ${uploadedImages.length === 1 ? 'imagen subida' : 'imágenes subidas'} correctamente`,
+            severity: 'success',
+          });
+        } else if (uploadedImages.length > 0) {
+          setSnackbar({
+            open: true,
+            message: `${uploadedImages.length} subida(s). Fallaron ${failedErrors.length}:\n${failedErrors.join('\n')}`,
+            severity: 'warning',
+            persistent: true,
+          });
+        } else {
+          setSnackbar({
+            open: true,
+            message: `Error al subir imágenes:\n${failedErrors.join('\n')}`,
+            severity: 'error',
+            persistent: true,
+          });
+        }
       } catch (err) {
         console.error('Error uploading images:', err);
         setSnackbar({

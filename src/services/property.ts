@@ -186,8 +186,8 @@ export class PropertyService {
     const thumbRef = ref(storage, `properties/${propertyId}/images/${imageId}_thumb.webp`);
 
     await Promise.all([
-      uploadBytes(mainRef, main, { contentType: 'image/webp' }),
-      uploadBytes(thumbRef, thumbnail, { contentType: 'image/webp' }),
+      uploadBytes(mainRef, main, { contentType: main.type || 'image/webp' }),
+      uploadBytes(thumbRef, thumbnail, { contentType: thumbnail.type || 'image/webp' }),
     ]);
 
     const [url, thumbnailUrl] = await Promise.all([

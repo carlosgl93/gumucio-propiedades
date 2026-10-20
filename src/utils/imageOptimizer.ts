@@ -99,6 +99,21 @@ export const compressImage = async (
     canvas.toBlob(
       (blob) => {
         if (!blob) {
+          // Graceful fallback to JPEG if WebP export is unsupported
+          if (format === 'image/webp') {
+            canvas.toBlob(
+              (fallbackBlob) => {
+                if (fallbackBlob) {
+                  resolve(fallbackBlob);
+                } else {
+                  reject(new Error('Error al generar blob comprimido'));
+                }
+              },
+              'image/jpeg',
+              quality,
+            );
+            return;
+          }
           reject(new Error('Error al generar blob comprimido'));
           return;
         }

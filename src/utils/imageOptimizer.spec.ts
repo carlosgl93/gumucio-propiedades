@@ -118,16 +118,33 @@ describe('imageOptimizer', () => {
       expect(blob.type).toBe('image/webp');
     });
 
-    it('rejects if toBlob returns null', async () => {
+    it('falls back to image/jpeg if WebP export is unsupported (returns null)', async () => {
+      mockCanvas.toBlob = vi.fn((callback, format) => {
+        if (format === 'image/webp') {
+          callback(null);
+        } else {
+          callback(new Blob(['fallback-jpg'], { type: 'image/jpeg' }));
+        }
+      });
+
+      const img = new Image();
+      img.width = 800;
+      img.height = 600;
+
+      const blob = await compressImage(img as HTMLImageElement, { format: 'image/webp' });
+      expect(blob.type).toBe('image/jpeg');
+    });
+
+    it('rejects if toBlob returns null for non-webp format or both fail', async () => {
       mockCanvas.toBlob = vi.fn((callback) => callback(null));
 
       const img = new Image();
       img.width = 800;
       img.height = 600;
 
-      await expect(compressImage(img as HTMLImageElement)).rejects.toThrow(
-        'Error al generar blob comprimido',
-      );
+      await expect(
+        compressImage(img as HTMLImageElement, { format: 'image/jpeg' }),
+      ).rejects.toThrow('Error al generar blob comprimido');
     });
 
     it('rejects if getContext returns null', async () => {
