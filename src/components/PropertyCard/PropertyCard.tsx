@@ -5,7 +5,7 @@ import { Bathtub, Bed, DirectionsCar, LocationOn, SquareFoot } from '@mui/icons-
 import { Box, Card, CardContent, CardMedia, Chip, Skeleton, Typography } from '@mui/material';
 
 import { Property } from '@/models';
-import { formatLocation, formatPrice } from '@/utils/formatters';
+import { formatChileanNumber, formatLocation, formatPrice } from '@/utils/formatters';
 
 import { PropertyShareButtons } from '../PropertyShareButtons';
 
@@ -129,7 +129,7 @@ export const PropertyCard = ({ property }: PropertyCardProps) => {
             <Box display="flex" alignItems="center" gap={0.5}>
               <Bathtub sx={{ fontSize: 16, color: 'text.secondary' }} />
               <Typography variant="body2" color="text.secondary">
-                {property.features.bathrooms}
+                {formatChileanNumber(property.features?.bathrooms)}
               </Typography>
             </Box>
           )}
@@ -144,7 +144,7 @@ export const PropertyCard = ({ property }: PropertyCardProps) => {
           <Box display="flex" alignItems="center" gap={0.5}>
             <SquareFoot sx={{ fontSize: 16, color: 'text.secondary' }} />
             <Typography variant="body2" color="text.secondary">
-              {property.features?.totalArea || 0}m²
+              {formatChileanNumber(property.features?.totalArea || 0)}m²
             </Typography>
           </Box>
         </Box>

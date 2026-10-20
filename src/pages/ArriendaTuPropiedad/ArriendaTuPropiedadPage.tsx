@@ -2,21 +2,25 @@ import { Email, Phone, WhatsApp } from '@mui/icons-material';
 import { Box, Button, Container, Paper, Typography } from '@mui/material';
 
 import { email, phoneNumber, whatsappNumber } from '@/config';
+import { trackContactClick } from '@/services/analytics';
 
 import { SectionTitle } from '../Home/Home';
 
 export const ArriendaTuPropiedadPage = () => {
   const handleWhatsApp = () => {
+    trackContactClick('whatsapp', { source: 'arrienda_tu_propiedad' });
     const msg = 'Hola! Quiero arrendar mi propiedad con Gumucio Propiedades. ¿Podrían contactarme?';
     const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
 
   const handlePhone = () => {
+    trackContactClick('phone', { source: 'arrienda_tu_propiedad' });
     window.open(`tel:${phoneNumber}`);
   };
 
   const handleEmail = () => {
+    trackContactClick('email', { source: 'arrienda_tu_propiedad' });
     const subject = 'Consulta para arrendar mi propiedad';
     const body =
       'Hola! Quiero arrendar mi propiedad con Gumucio Propiedades. ¿Podrían contactarme para más información?';

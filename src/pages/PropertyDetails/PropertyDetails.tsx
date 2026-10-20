@@ -33,7 +33,8 @@ import Loading from '@/components/Loading';
 import { PropertyShareButtons } from '@/components/PropertyShareButtons';
 import { email, phoneNumber, whatsappNumber } from '@/config';
 import { useProperty } from '@/hooks/useProperties';
-import { formatLocation, formatPrice } from '@/utils/formatters';
+import { trackContactClick, trackPropertyView } from '@/services/analytics';
+import { formatChileanNumber, formatLocation, formatPrice } from '@/utils/formatters';
 
 import { SectionTitle } from '../Home/Home';
 
@@ -81,6 +82,13 @@ export const PropertyDetails = () => {
   console.log({ property });
 
   const handleWhatsApp = () => {
+    trackContactClick('whatsapp', {
+      propertyId: property?.id,
+      propertyTitle: property?.title,
+      source: location.pathname,
+      value: property?.price,
+      currency: property?.currency,
+    });
     const locationUrl = `${import.meta.env.VITE_PROD_URL}${location.pathname}`;
     const msg = `Hola! me interesa esta propiedad: ${property?.title || 'Sin título'} ${locationUrl}`;
     console.log('WhatsApp message:', msg);
@@ -89,16 +97,36 @@ export const PropertyDetails = () => {
   };
 
   const handleClickPhonecall = () => {
+    trackContactClick('phone', {
+      propertyId: property?.id,
+      propertyTitle: property?.title,
+      source: location.pathname,
+      value: property?.price,
+      currency: property?.currency,
+    });
     const phone = property?.contactInfo?.phone || phoneNumber;
     window.open(`tel:${phone}`);
   };
 
   const handleSendEmail = () => {
+    trackContactClick('email', {
+      propertyId: property?.id,
+      propertyTitle: property?.title,
+      source: location.pathname,
+      value: property?.price,
+      currency: property?.currency,
+    });
     const locationText = formatLocation(property?.address?.commune, property?.address?.city);
     window.open(
       `mailto:${email}?subject=Consulta sobre propiedad: ${property?.title || 'Sin título'}&body=Hola, me interesa la propiedad: ${property?.address?.street || ''}${locationText ? `, ${locationText}` : ''}`,
     );
   };
+
+  useEffect(() => {
+    if (property) {
+      trackPropertyView(property);
+    }
+  }, [property]);
 
   useEffect(() => {
     if (!id) {
@@ -268,7 +296,7 @@ export const PropertyDetails = () => {
                       <Bathtub sx={{ fontSize: 32, color: 'teal.main' }} />
                     </Box>
                     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                      {property.features.bathrooms}
+                      {formatChileanNumber(property.features.bathrooms)}
                     </Typography>
                     <Typography variant="body2" color="grey.600">
                       Baños
@@ -296,7 +324,7 @@ export const PropertyDetails = () => {
                       <SquareFoot sx={{ fontSize: 32, color: 'teal.main' }} />
                     </Box>
                     <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                      {property.features.totalArea}m²
+                      {formatChileanNumber(property.features.totalArea)}m²
                     </Typography>
                     <Typography variant="body2" color="grey.600">
                       Área Total
@@ -313,7 +341,8 @@ export const PropertyDetails = () => {
                     {(property.features.builtArea ?? 0) > 0 && (
                       <Grid item xs={6}>
                         <Typography variant="body1">
-                          <strong>Área Construida:</strong> {property.features.builtArea}m²
+                          <strong>Área Construida:</strong>{' '}
+                          {formatChileanNumber(property.features.builtArea)}m²
                         </Typography>
                       </Grid>
                     )}

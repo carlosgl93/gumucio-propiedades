@@ -36,11 +36,7 @@ export const useFeatureFlag = (feature: string): boolean => {
   const environment = getEnvironment();
 
   // Features that are only available in development
-  const devOnlyFeatures = [
-    'fixtures',
-    'debugMode',
-    'testData',
-  ];
+  const devOnlyFeatures = ['fixtures', 'debugMode', 'testData'];
 
   if (devOnlyFeatures.includes(feature)) {
     return environment === 'development';

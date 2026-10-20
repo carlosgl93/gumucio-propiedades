@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatLocation, formatPrice } from './formatters';
+import {
+  formatChileanNumber,
+  formatLocation,
+  formatNumberForInput,
+  formatPrice,
+} from './formatters';
 
 describe('formatPrice', () => {
   it('formats UF with thousands separator for 4-digit values', () => {
@@ -13,6 +18,12 @@ describe('formatPrice', () => {
 
   it('formats UF with thousands separator for 5-digit values (21000)', () => {
     expect(formatPrice(21000, 'UF')).toBe('UF 21.000');
+  });
+
+  it('formats UF with decimals', () => {
+    expect(formatPrice(15.5, 'UF')).toBe('UF 15,5');
+    expect(formatPrice(1250.5, 'UF')).toBe('UF 1.250,5');
+    expect(formatPrice(15.25, 'UF')).toBe('UF 15,25');
   });
 
   it('formats UF zero', () => {
@@ -33,6 +44,37 @@ describe('formatPrice', () => {
 
   it('formats UF 1-digit value', () => {
     expect(formatPrice(5, 'UF')).toBe('UF 5');
+  });
+});
+
+describe('formatChileanNumber', () => {
+  it('formats numbers with es-CL locale (thousands with dots, decimals with comma)', () => {
+    expect(formatChileanNumber(15.5)).toBe('15,5');
+    expect(formatChileanNumber(1250.5)).toBe('1.250,5');
+    expect(formatChileanNumber(80)).toBe('80');
+    expect(formatChileanNumber(1.5)).toBe('1,5');
+    expect(formatChileanNumber(0)).toBe('0');
+  });
+
+  it('returns empty string for null, undefined, and NaN', () => {
+    expect(formatChileanNumber(undefined)).toBe('');
+    expect(formatChileanNumber(null)).toBe('');
+    expect(formatChileanNumber(NaN)).toBe('');
+  });
+});
+
+describe('formatNumberForInput', () => {
+  it('converts number to string with comma decimal and no thousands separator', () => {
+    expect(formatNumberForInput(15.5)).toBe('15,5');
+    expect(formatNumberForInput(15)).toBe('15');
+    expect(formatNumberForInput(1250.5)).toBe('1250,5');
+    expect(formatNumberForInput(0)).toBe('0');
+  });
+
+  it('returns empty string for undefined, null, and NaN', () => {
+    expect(formatNumberForInput(undefined)).toBe('');
+    expect(formatNumberForInput(null)).toBe('');
+    expect(formatNumberForInput(NaN)).toBe('');
   });
 });
 

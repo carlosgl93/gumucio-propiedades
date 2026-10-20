@@ -177,9 +177,17 @@ export const formatChileanPhone = (phone: string): string => {
   return phone; // Return original if can't format
 };
 
-// Utility to clean and validate numeric inputs
-export const parseNumericInput = (value: string): number => {
-  const cleaned = value.replace(/[^\d.]/g, '');
-  const parsed = parseFloat(cleaned);
+// Utility to clean and parse Chilean numeric inputs (. for thousands, , for decimals)
+export const parseChileanNumber = (value: string | number | undefined | null): number => {
+  if (value === undefined || value === null) return 0;
+  if (typeof value === 'number') return isNaN(value) ? 0 : value;
+  const str = value.trim();
+  if (!str) return 0;
+  const normalized = str.replace(/\s+/g, '').replace(/\./g, '').replace(',', '.');
+  const parsed = parseFloat(normalized);
   return isNaN(parsed) ? 0 : parsed;
 };
+
+// Utility to clean and validate numeric inputs (backwards compatibility alias)
+export const parseNumericInput = (value: string | number | undefined | null): number =>
+  parseChileanNumber(value);

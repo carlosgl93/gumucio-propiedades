@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-this-alias */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Property } from '../models/property';

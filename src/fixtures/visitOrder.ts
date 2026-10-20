@@ -82,6 +82,8 @@ export const visitOrderFixtures: Record<string, VisitOrderFixture> = {
  * @param fixtureName - Name of the fixture (default: 'default')
  * @returns VisitOrderFixture
  */
-export const getVisitOrderFixture = (fixtureName: keyof typeof visitOrderFixtures = 'default'): VisitOrderFixture => {
+export const getVisitOrderFixture = (
+  fixtureName: keyof typeof visitOrderFixtures = 'default',
+): VisitOrderFixture => {
   return visitOrderFixtures[fixtureName] || visitOrderFixtures.default;
 };

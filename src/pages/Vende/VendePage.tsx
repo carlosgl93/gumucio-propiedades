@@ -2,21 +2,25 @@ import { Email, Phone, WhatsApp } from '@mui/icons-material';
 import { Box, Button, Container, Paper, Typography } from '@mui/material';
 
 import { email, phoneNumber, whatsappNumber } from '@/config';
+import { trackContactClick } from '@/services/analytics';
 
 import { SectionTitle } from '../Home/Home';
 
 export const VendePage = () => {
   const handleWhatsApp = () => {
+    trackContactClick('whatsapp', { source: 'vende_tu_propiedad' });
     const msg = 'Hola! Quiero vender mi propiedad con Gumucio Propiedades. ¿Podrían contactarme?';
     const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
 
   const handlePhone = () => {
+    trackContactClick('phone', { source: 'vende_tu_propiedad' });
     window.open(`tel:${phoneNumber}`);
   };
 
   const handleEmail = () => {
+    trackContactClick('email', { source: 'vende_tu_propiedad' });
     const subject = 'Consulta para vender mi propiedad';
     const body =
       'Hola! Quiero vender mi propiedad con Gumucio Propiedades. ¿Podrían contactarme para más información?';

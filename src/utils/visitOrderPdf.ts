@@ -5,6 +5,7 @@ import { PDF_CONFIG } from '@/config/pdfConfig';
 import { Property } from '@/models';
 
 import { formatPriceWithConversion } from './currencyConverter';
+import { formatChileanNumber } from './formatters';
 
 interface VisitOrderData {
   visitorName: string;
@@ -197,19 +198,27 @@ export const generateVisitOrderPDF = async (
 
   // Bathrooms
   if (property.features?.bathrooms !== undefined) {
-    doc.text(`Baños: ${property.features.bathrooms}`, detailsX + 2, detailsY);
+    doc.text(`Baños: ${formatChileanNumber(property.features.bathrooms)}`, detailsX + 2, detailsY);
     detailsY += 4;
   }
 
   // Built area (superficie útil)
   if (property.features?.builtArea !== undefined) {
-    doc.text(`Superficie útil: ${property.features.builtArea} m²`, detailsX + 2, detailsY);
+    doc.text(
+      `Superficie útil: ${formatChileanNumber(property.features.builtArea)} m²`,
+      detailsX + 2,
+      detailsY,
+    );
     detailsY += 4;
   }
 
   // Total area (superficie total)
   if (property.features?.totalArea !== undefined) {
-    doc.text(`Superficie total: ${property.features.totalArea} m²`, detailsX + 2, detailsY);
+    doc.text(
+      `Superficie total: ${formatChileanNumber(property.features.totalArea)} m²`,
+      detailsX + 2,
+      detailsY,
+    );
     detailsY += 4;
   }
 

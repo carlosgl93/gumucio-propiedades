@@ -31,3 +31,7 @@ dist-ssr
 /playwright/.cache/
 dist
 .firebase/*
+.gstack/
+.claude/
+test-files/
+test-final2.mjs

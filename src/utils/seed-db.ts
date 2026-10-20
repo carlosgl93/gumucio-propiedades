@@ -1,5 +1,10 @@
 import { initializeApp } from 'firebase/app';
-import { connectAuthEmulator, createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
+import {
+  connectAuthEmulator,
+  createUserWithEmailAndPassword,
+  getAuth,
+  signInWithEmailAndPassword,
+} from 'firebase/auth';
 import { addDoc, collection, connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 import {
   connectStorageEmulator,
@@ -64,11 +69,21 @@ async function uploadImage(propertyId: string, fileName: string, order: number) 
 
 async function seed() {
   console.log('Seeding properties...');
-  await createUserWithEmailAndPassword(auth, user.email || '', user.password || '');
-  console.log(`Seeded: ${user.email}`);
+  try {
+    await createUserWithEmailAndPassword(auth, user.email || '', user.password || '');
+    console.log(`Seeded user: ${user.email}`);
+  } catch (err: any) {
+    if (err.code === 'auth/email-already-in-use') {
+      console.log(`User already exists: ${user.email}, signing in...`);
+      await signInWithEmailAndPassword(auth, user.email || '', user.password || '');
+    } else {
+      console.error('Error creating user:', err);
+    }
+  }
 
   for (let i = 0; i < 12; i++) {
     const isRent = i < 6;
+    const isUF = i % 3 === 0;
     const propertyId = `property_${i + 1}`;
     const images = [];
     for (let j = 0; j < localImages.length; j++) {
@@ -81,8 +96,14 @@ async function seed() {
         ? 'Propiedad de ejemplo para arriendo.'
         : 'Propiedad de ejemplo para venta.',
       type: isRent ? 'rent' : 'sale',
-      price: isRent ? 500000 + i * 100000 : 100000000 + i * 50000000,
-      currency: 'CLP',
+      price: isUF
+        ? isRent
+          ? 15.5 + i * 2.5
+          : 3500.5 + i * 500
+        : isRent
+          ? 500000 + i * 100000
+          : 100000000 + i * 50000000,
+      currency: isUF ? 'UF' : 'CLP',
       propertyType: isRent ? 'departamento' : 'casa',
       status: 'disponible',
       address: {
@@ -94,10 +115,10 @@ async function seed() {
       },
       features: {
         bedrooms: 2 + i,
-        bathrooms: 1 + (i % 2),
+        bathrooms: 1.5 + (i % 2),
         parkingSpaces: 1,
-        totalArea: 60 + i * 10,
-        builtArea: 55 + i * 10,
+        totalArea: 60.5 + i * 10,
+        builtArea: 55.5 + i * 10,
         yearBuilt: 2010 + i,
       },
       amenities: ['Piscina', 'Gimnasio'],
@@ -116,6 +137,10 @@ async function seed() {
     console.log(`Seeded: ${prop.title}`);
   }
   console.log('✅ Seeding complete!');
+  process.exit(0);
 }
 
-seed().catch(console.error);
+seed().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

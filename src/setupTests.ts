@@ -7,6 +7,8 @@ vi.stubEnv('VITE_PROD_URL', 'https://test.com');
 // Mock Firebase (if needed)
 vi.mock('@/firebase', () => ({
   default: {},
+  app: {},
+  analytics: {},
   auth: {},
   db: {},
   storage: {},

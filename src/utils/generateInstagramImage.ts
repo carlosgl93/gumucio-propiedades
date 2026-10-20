@@ -1,6 +1,6 @@
 import { Property } from '@/models';
 
-import { formatLocation, formatPrice } from './formatters';
+import { formatChileanNumber, formatLocation, formatPrice } from './formatters';
 
 /**
  * Generates an Instagram Story image (1080x1920px) with property details
@@ -85,10 +85,10 @@ export const generateInstagramStoryImage = async (property: Property): Promise<B
       features.push(`${property.features.bedrooms} dorm`);
     }
     if (property.features?.bathrooms) {
-      features.push(`${property.features.bathrooms} baños`);
+      features.push(`${formatChileanNumber(property.features.bathrooms)} baños`);
     }
     if (property.features?.totalArea) {
-      features.push(`${property.features.totalArea}m²`);
+      features.push(`${formatChileanNumber(property.features.totalArea)}m²`);
     }
 
     const featuresText = features.join(' • ');

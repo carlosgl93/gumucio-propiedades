@@ -24,7 +24,8 @@ import {
 } from '@mui/material';
 
 import { Property } from '@/models';
-import { formatLocation } from '@/utils/formatters';
+import { trackPropertyShare } from '@/services/analytics';
+import { formatChileanNumber, formatLocation } from '@/utils/formatters';
 
 // import { generateInstagramStoryImage } from '@/utils/generateInstagramImage';
 
@@ -54,10 +55,10 @@ export const PropertyShareButtons = ({ property, variant = 'full' }: PropertySha
     features.push(`${property.features.bedrooms} dorm`);
   }
   if (property.features?.bathrooms) {
-    features.push(`${property.features.bathrooms} baños`);
+    features.push(`${formatChileanNumber(property.features.bathrooms)} baños`);
   }
   if (property.features?.totalArea) {
-    features.push(`${property.features.totalArea}m²`);
+    features.push(`${formatChileanNumber(property.features.totalArea)}m²`);
   }
 
   const formatPrice = (priceValue: number, curr: string): string => {
@@ -67,9 +68,13 @@ export const PropertyShareButtons = ({ property, variant = 'full' }: PropertySha
         style: 'currency',
         currency: 'CLP',
         minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
       }).format(priceValue);
     }
-    return `${curr} ${priceValue.toLocaleString('es-CL')}`;
+    return `${curr} ${priceValue.toLocaleString('es-CL', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })}`;
   };
 
   // WhatsApp-specific share text (includes image URL for better previews)
@@ -90,6 +95,7 @@ ${features.join(' • ')}`.trim();
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(propertyUrl);
+      trackPropertyShare('copy_link', property.id);
       console.log('Link copied to clipboard:', propertyUrl);
       setSnackbarMessage('¡Enlace copiado! Pégalo en Instagram Stories');
       setSnackbarOpen(true);
@@ -134,6 +140,7 @@ ${features.join(' • ')}`.trim();
           text: shareText,
           url: propertyUrl,
         });
+        trackPropertyShare('native_share', property.id);
       } catch (error) {
         // User cancelled or error occurred
         console.error('Error sharing:', error);

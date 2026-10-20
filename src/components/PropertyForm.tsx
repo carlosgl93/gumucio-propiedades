@@ -53,15 +53,41 @@ import {
   useUpdateProperty,
   useUploadPropertyImage,
 } from '../hooks/useProperties';
+import { formatNumberForInput } from '../utils/formatters';
 import {
   ValidationError,
   formatChileanPhone,
   getFieldError,
   hasFieldError,
-  parseNumericInput,
+  parseChileanNumber,
   validateProperty,
 } from '../utils/validations';
 import { VisitOrderDialog } from './VisitOrderDialog';
+
+interface RawNumericInputs {
+  price: string;
+  totalArea: string;
+  builtArea: string;
+  bathrooms: string;
+}
+
+const getInitialRawInputs = (prop?: Partial<Property> | null): RawNumericInputs => ({
+  price: prop?.price != null && prop.price > 0 ? formatNumberForInput(prop.price) : '',
+  totalArea:
+    prop?.features?.totalArea != null && prop.features.totalArea > 0
+      ? formatNumberForInput(prop.features.totalArea)
+      : '',
+  builtArea:
+    prop?.features?.builtArea != null && prop.features.builtArea > 0
+      ? formatNumberForInput(prop.features.builtArea)
+      : '',
+  bathrooms:
+    prop?.features?.bathrooms != null && prop.features.bathrooms > 0
+      ? formatNumberForInput(prop.features.bathrooms)
+      : '',
+});
+
+const isValidChileanNumericInput = (val: string): boolean => /^[\d.]*(,[\d]*)?$/.test(val);
 
 interface PropertyFormProps {
   property?: Property | null;
@@ -178,9 +204,12 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
     }),
   );
 
+  const [rawInputs, setRawInputs] = useState<RawNumericInputs>(() => getInitialRawInputs(property));
+
   useEffect(() => {
     if (property) {
       setFormData(property);
+      setRawInputs(getInitialRawInputs(property));
     }
   }, [property]);
 
@@ -209,14 +238,33 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
     setValidationErrors((prev) => prev.filter((err) => err.field !== fieldPath));
   };
 
-  const handleNumericInputChange = (parent: string, field: string, value: string) => {
-    const numericValue = parseNumericInput(value);
-    handleNestedInputChange(parent, field, numericValue);
+  const handleDecimalChange = (
+    field: 'price' | 'totalArea' | 'builtArea' | 'bathrooms',
+    value: string,
+  ) => {
+    if (!isValidChileanNumericInput(value)) {
+      return;
+    }
+
+    setRawInputs((prev) => ({ ...prev, [field]: value }));
+
+    const numericValue = parseChileanNumber(value);
+
+    if (field === 'price') {
+      handleInputChange('price', numericValue);
+    } else {
+      handleNestedInputChange('features', field, numericValue);
+    }
   };
 
-  const handlePriceChange = (value: string) => {
-    const numericValue = parseNumericInput(value);
-    handleInputChange('price', numericValue);
+  const handleNumericInputChange = (parent: string, field: string, value: string) => {
+    if (field === 'bathrooms' || field === 'totalArea' || field === 'builtArea') {
+      handleDecimalChange(field, value);
+    } else {
+      const cleaned = value.replace(/\D/g, '');
+      const numericValue = cleaned ? parseInt(cleaned, 10) : 0;
+      handleNestedInputChange(parent, field, numericValue);
+    }
   };
 
   const handlePhoneChange = (field: string, value: string) => {
@@ -599,8 +647,8 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                     <TextField
                       fullWidth
                       label="Precio"
-                      value={formData.price}
-                      onChange={(e) => handlePriceChange(e.target.value)}
+                      value={rawInputs.price}
+                      onChange={(e) => handleDecimalChange('price', e.target.value)}
                       error={hasFieldError(validationErrors, 'price')}
                       helperText={getFieldError(validationErrors, 'price')}
                       required
@@ -798,7 +846,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                     <TextField
                       fullWidth
                       label="Dormitorios"
-                      value={formData.features?.bedrooms}
+                      value={formData.features?.bedrooms || ''}
                       onChange={(e) =>
                         handleNumericInputChange('features', 'bedrooms', e.target.value)
                       }
@@ -810,10 +858,8 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                     <TextField
                       fullWidth
                       label="Baños"
-                      value={formData.features?.bathrooms}
-                      onChange={(e) =>
-                        handleNumericInputChange('features', 'bathrooms', e.target.value)
-                      }
+                      value={rawInputs.bathrooms}
+                      onChange={(e) => handleDecimalChange('bathrooms', e.target.value)}
                       error={hasFieldError(validationErrors, 'features.bathrooms')}
                       helperText={getFieldError(validationErrors, 'features.bathrooms')}
                     />
@@ -822,7 +868,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                     <TextField
                       fullWidth
                       label="Estacionamientos"
-                      value={formData.features?.parkingSpaces}
+                      value={formData.features?.parkingSpaces || ''}
                       onChange={(e) =>
                         handleNumericInputChange('features', 'parkingSpaces', e.target.value)
                       }
@@ -834,10 +880,8 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                     <TextField
                       fullWidth
                       label="Superficie Total (m²)"
-                      value={formData.features?.totalArea}
-                      onChange={(e) =>
-                        handleNumericInputChange('features', 'totalArea', e.target.value)
-                      }
+                      value={rawInputs.totalArea}
+                      onChange={(e) => handleDecimalChange('totalArea', e.target.value)}
                       error={hasFieldError(validationErrors, 'features.totalArea')}
                       helperText={getFieldError(validationErrors, 'features.totalArea')}
                       required
@@ -847,10 +891,8 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                     <TextField
                       fullWidth
                       label="Superficie Construida (m²)"
-                      value={formData.features?.builtArea}
-                      onChange={(e) =>
-                        handleNumericInputChange('features', 'builtArea', e.target.value)
-                      }
+                      value={rawInputs.builtArea}
+                      onChange={(e) => handleDecimalChange('builtArea', e.target.value)}
                       error={hasFieldError(validationErrors, 'features.builtArea')}
                       helperText={getFieldError(validationErrors, 'features.builtArea')}
                     />
@@ -906,7 +948,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                     <TextField
                       fullWidth
                       label="Teléfono"
-                      value={formData.contactInfo?.phone}
+                      value={formData.contactInfo?.phone || ''}
                       onChange={(e) => handlePhoneChange('phone', e.target.value)}
                       error={hasFieldError(validationErrors, 'contactInfo.phone')}
                       helperText={
@@ -921,7 +963,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                       fullWidth
                       label="Email"
                       type="email"
-                      value={formData.contactInfo?.email}
+                      value={formData.contactInfo?.email || ''}
                       onChange={(e) =>
                         handleNestedInputChange('contactInfo', 'email', e.target.value)
                       }
@@ -934,7 +976,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                     <TextField
                       fullWidth
                       label="WhatsApp"
-                      value={formData.contactInfo?.whatsapp}
+                      value={formData.contactInfo?.whatsapp || ''}
                       onChange={(e) => handlePhoneChange('whatsapp', e.target.value)}
                       error={hasFieldError(validationErrors, 'contactInfo.whatsapp')}
                       helperText={

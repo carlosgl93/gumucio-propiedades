@@ -15,6 +15,7 @@ import {
 
 import { whatsappNumber } from '@/config';
 import { useInfiniteProperties, usePropertiesCount } from '@/hooks/useProperties';
+import { trackContactClick } from '@/services/analytics';
 
 import { SectionTitle } from '../pages/Home/Home';
 import { PropertyCard } from './PropertyCard';
@@ -60,6 +61,7 @@ export const PropertyListView = ({
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleWhatsApp = () => {
+    trackContactClick('whatsapp', { source: `property_list_${type}` });
     const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(ctaMessage)}`;
     window.open(url, '_blank');
   };
@@ -83,7 +85,9 @@ export const PropertyListView = ({
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
         <Typography variant="h6" color="text.secondary">
           {totalCount ?? properties.length}{' '}
-          {(totalCount ?? properties.length) === 1 ? 'propiedad encontrada' : 'propiedades encontradas'}
+          {(totalCount ?? properties.length) === 1
+            ? 'propiedad encontrada'
+            : 'propiedades encontradas'}
         </Typography>
       </Box>
 

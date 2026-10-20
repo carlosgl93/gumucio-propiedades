@@ -1,6 +1,8 @@
-import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
+
+import { render } from '@testing-library/react';
 import { vi } from 'vitest';
+
 import Pages from './Pages';
 
 vi.mock('../index', () => ({
@@ -12,7 +14,7 @@ describe('Pages accessibility', () => {
     render(
       <MemoryRouter>
         <Pages />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     const mainElement = document.querySelector('main');
