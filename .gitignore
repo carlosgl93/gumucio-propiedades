@@ -35,3 +35,4 @@ dist
 .claude/
 test-files/
 test-final2.mjs
+backups/
