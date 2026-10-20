@@ -45,7 +45,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 import { email, phoneNumber } from '@/config';
-import { Property } from '@/models';
+import { Property, PropertyImage } from '@/models';
 
 import {
   useCreateProperty,
