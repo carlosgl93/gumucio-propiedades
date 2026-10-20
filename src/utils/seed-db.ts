@@ -21,7 +21,7 @@ const firebaseConfig = {
   apiKey: 'fake-api-key',
   authDomain: 'localhost',
   projectId: 'gumucio-pro',
-  storageBucket: 'gumucio-pro.default-bucket.appspot.com',
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || 'gumucio-pro.firebasestorage.app',
 };
 
 const app = initializeApp(firebaseConfig);
