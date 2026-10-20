@@ -25,6 +25,12 @@ vi.mock('@/utils/imageOptimizer', () => ({
       thumbnail: new Blob(['thumb-bytes'], { type: 'image/webp' }),
     }),
   ),
+  processImageUrlForUpload: vi.fn(() =>
+    Promise.resolve({
+      main: new Blob(['main-bytes'], { type: 'image/webp' }),
+      thumbnail: new Blob(['thumb-bytes'], { type: 'image/webp' }),
+    }),
+  ),
 }));
 
 describe('PropertyService.formatPropertyData', () => {
@@ -218,5 +224,30 @@ describe('PropertyService - Image upload and deletion with WebP optimization', (
 
     expect(deleteObject).not.toHaveBeenCalled();
     expect(warnSpy).toHaveBeenCalledWith('Image with ID non-existent not found in storage');
+  });
+
+  it('optimizes legacy images in property and skips already optimized webp images', async () => {
+    const legacyImage = {
+      id: 'img-1',
+      url: 'https://storage.mock/properties/prop-1/images/img-1.jpg',
+      order: 0,
+      uploadedAt: new Date(),
+    };
+    const alreadyOptimized = {
+      id: 'img-2',
+      url: 'https://storage.mock/properties/prop-1/images/img-2.webp',
+      thumbnailUrl: 'https://storage.mock/properties/prop-1/images/img-2_thumb.webp',
+      order: 1,
+      uploadedAt: new Date(),
+    };
+
+    const result = await service.optimizePropertyImages('prop-1', [legacyImage, alreadyOptimized]);
+
+    expect(result).toHaveLength(2);
+    // Legacy image got converted to webp and received thumbnailUrl
+    expect(result[0].url).toMatch(/\.webp$/);
+    expect(result[0].thumbnailUrl).toMatch(/_thumb\.webp$/);
+    // Already optimized image remained untouched
+    expect(result[1]).toEqual(alreadyOptimized);
   });
 });

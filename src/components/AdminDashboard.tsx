@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 
 import {
   Add,
+  AutoFixHigh,
   Delete,
   Description,
   Edit,
@@ -47,6 +48,7 @@ import { formatPrice } from '@/utils/formatters';
 
 import { useAuth } from '../hooks/useAuth';
 import { useDeleteProperty, useProperties, usePropertyStats } from '../hooks/useProperties';
+import { ImageMigrationDialog } from './ImageMigrationDialog';
 import { PropertyForm } from './PropertyForm';
 import { PropertyShareButtons } from './PropertyShareButtons';
 import { VisitOrderDialog } from './VisitOrderDialog';
@@ -60,6 +62,7 @@ export const AdminDashboard = () => {
   const [propertyToShare, setPropertyToShare] = useState<Property | null>(null);
   const [visitOrderDialogOpen, setVisitOrderDialogOpen] = useState(false);
   const [propertyForVisitOrder, setPropertyForVisitOrder] = useState<Property | null>(null);
+  const [migrationDialogOpen, setMigrationDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const { logout, user } = useAuth();
@@ -323,14 +326,25 @@ export const AdminDashboard = () => {
                 />
               )}
             </Typography>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={handleCreateProperty}
-              disabled={isLoading}
-            >
-              Nueva Propiedad
-            </Button>
+            <Box display="flex" gap={1}>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<AutoFixHigh />}
+                onClick={() => setMigrationDialogOpen(true)}
+                disabled={isLoading}
+              >
+                Optimizar a WebP
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={handleCreateProperty}
+                disabled={isLoading}
+              >
+                Nueva Propiedad
+              </Button>
+            </Box>
           </Box>
 
           {/* Search Bar */}
@@ -550,6 +564,16 @@ export const AdminDashboard = () => {
         onClose={() => {
           setVisitOrderDialogOpen(false);
           setPropertyForVisitOrder(null);
+        }}
+      />
+
+      {/* Image Migration Dialog */}
+      <ImageMigrationDialog
+        open={migrationDialogOpen}
+        properties={properties}
+        onClose={() => setMigrationDialogOpen(false)}
+        onSuccess={() => {
+          refetch();
         }}
       />
 

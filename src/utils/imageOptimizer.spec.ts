@@ -4,6 +4,7 @@ import {
   calculateDimensions,
   compressImage,
   loadImage,
+  processImageUrlForUpload,
   processPropertyImageForUpload,
 } from './imageOptimizer';
 
@@ -191,6 +192,16 @@ describe('imageOptimizer', () => {
     it('processes a file into both main WebP and thumbnail WebP blobs', async () => {
       const file = new File(['raw-image-data'], 'house.jpg', { type: 'image/jpeg' });
       const result = await processPropertyImageForUpload(file);
+
+      expect(result.main).toBeDefined();
+      expect(result.thumbnail).toBeDefined();
+      expect(result.main.type).toBe('image/webp');
+      expect(result.thumbnail.type).toBe('image/webp');
+      expect(mockCanvas.toBlob).toHaveBeenCalledTimes(2);
+    });
+
+    it('processes an image URL into both main WebP and thumbnail WebP blobs', async () => {
+      const result = await processImageUrlForUpload('https://example.com/property.jpg');
 
       expect(result.main).toBeDefined();
       expect(result.thumbnail).toBeDefined();

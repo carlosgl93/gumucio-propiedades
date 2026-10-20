@@ -45,6 +45,7 @@ export const calculateDimensions = (
 export const loadImage = (source: Blob | File | string): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = 'anonymous';
     const isString = typeof source === 'string';
     const url = isString ? source : URL.createObjectURL(source);
 
@@ -132,6 +133,35 @@ export const processPropertyImageForUpload = async (
   file: File,
 ): Promise<ProcessedPropertyImages> => {
   const img = await loadImage(file);
+
+  const [main, thumbnail] = await Promise.all([
+    compressImage(img, {
+      maxWidth: 1920,
+      maxHeight: 1080,
+      quality: 0.82,
+      format: 'image/webp',
+    }),
+    compressImage(img, {
+      maxWidth: 480,
+      maxHeight: 480,
+      quality: 0.75,
+      format: 'image/webp',
+    }),
+  ]);
+
+  return {
+    main,
+    thumbnail,
+  };
+};
+
+/**
+ * Processes an image from an existing URL into an optimized main image and a thumbnail in WebP format.
+ */
+export const processImageUrlForUpload = async (
+  imageUrl: string,
+): Promise<ProcessedPropertyImages> => {
+  const img = await loadImage(imageUrl);
 
   const [main, thumbnail] = await Promise.all([
     compressImage(img, {

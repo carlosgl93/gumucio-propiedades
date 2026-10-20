@@ -21,7 +21,7 @@ import { deleteObject, getDownloadURL, listAll, ref, uploadBytes } from 'firebas
 
 import { db, storage } from '@/firebase';
 import { PUBLIC_HIDDEN_STATUSES, Property, PropertyImage } from '@/models';
-import { processPropertyImageForUpload } from '@/utils/imageOptimizer';
+import { processImageUrlForUpload, processPropertyImageForUpload } from '@/utils/imageOptimizer';
 
 export type PropertyVisibility = 'public' | 'admin';
 
@@ -222,6 +222,48 @@ export class PropertyService {
     } else {
       console.warn(`Image with ID ${imageId} not found in storage`);
     }
+  }
+
+  async optimizePropertyImages(
+    propertyId: string,
+    images: PropertyImage[],
+  ): Promise<PropertyImage[]> {
+    const updatedImages: PropertyImage[] = [];
+
+    for (const image of images) {
+      // If already WebP and has thumbnail, keep as is
+      if (image.thumbnailUrl && image.url.includes('.webp')) {
+        updatedImages.push(image);
+        continue;
+      }
+
+      try {
+        const { main, thumbnail } = await processImageUrlForUpload(image.url);
+        const mainRef = ref(storage, `properties/${propertyId}/images/${image.id}.webp`);
+        const thumbRef = ref(storage, `properties/${propertyId}/images/${image.id}_thumb.webp`);
+
+        await Promise.all([
+          uploadBytes(mainRef, main, { contentType: main.type || 'image/webp' }),
+          uploadBytes(thumbRef, thumbnail, { contentType: thumbnail.type || 'image/webp' }),
+        ]);
+
+        const [url, thumbnailUrl] = await Promise.all([
+          getDownloadURL(mainRef),
+          getDownloadURL(thumbRef),
+        ]);
+
+        updatedImages.push({
+          ...image,
+          url,
+          thumbnailUrl,
+        });
+      } catch (err) {
+        console.error(`Error optimizing image ${image.id}:`, err);
+        updatedImages.push(image);
+      }
+    }
+
+    return updatedImages;
   }
 
   private async deleteAllPropertyImages(propertyId: string): Promise<void> {
