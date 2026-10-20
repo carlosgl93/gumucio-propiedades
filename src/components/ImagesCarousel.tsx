@@ -17,7 +17,7 @@ const ImagesCarousel = ({ images }: { images?: PropertyImage[] | null }) => {
         sx={{
           maxWidth: 800,
           mx: 'auto',
-          height: 400,
+          height: { xs: 260, sm: 400 },
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -51,7 +51,7 @@ const ImagesCarousel = ({ images }: { images?: PropertyImage[] | null }) => {
       {/* Main Carousel */}
       <Box sx={{ position: 'relative', mb: 2 }}>
         {/* Main Image */}
-        <Box sx={{ position: 'relative', height: 400, mx: 2 }}>
+        <Box sx={{ position: 'relative', height: { xs: 260, sm: 400 }, mx: { xs: 0, sm: 2 } }}>
           <Paper
             elevation={3}
             sx={{
@@ -59,6 +59,10 @@ const ImagesCarousel = ({ images }: { images?: PropertyImage[] | null }) => {
               borderRadius: 2,
               overflow: 'hidden',
               position: 'relative',
+              bgcolor: { xs: 'grey.900', sm: 'transparent' },
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
             {currentImage?.url ? (
@@ -70,7 +74,7 @@ const ImagesCarousel = ({ images }: { images?: PropertyImage[] | null }) => {
                 sx={{
                   width: '100%',
                   height: '100%',
-                  objectFit: 'cover',
+                  objectFit: { xs: 'contain', sm: 'cover' },
                 }}
               />
             ) : (
@@ -97,11 +101,12 @@ const ImagesCarousel = ({ images }: { images?: PropertyImage[] | null }) => {
                   onClick={goToPrevious}
                   sx={{
                     position: 'absolute',
-                    left: 16,
+                    left: { xs: 8, sm: 16 },
                     top: '50%',
                     transform: 'translateY(-50%)',
                     bgcolor: '#92ad9e',
                     color: '#f7f6f1',
+                    p: { xs: 0.75, sm: 1 },
                     '&:hover': {
                       bgcolor: '#7a9286',
                     },
@@ -109,18 +114,19 @@ const ImagesCarousel = ({ images }: { images?: PropertyImage[] | null }) => {
                   }}
                   aria-label="Previous image"
                 >
-                  <ChevronLeft />
+                  <ChevronLeft sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
                 </IconButton>
 
                 <IconButton
                   onClick={goToNext}
                   sx={{
                     position: 'absolute',
-                    right: 16,
+                    right: { xs: 8, sm: 16 },
                     top: '50%',
                     transform: 'translateY(-50%)',
                     bgcolor: '#92ad9e',
                     color: '#f7f6f1',
+                    p: { xs: 0.75, sm: 1 },
                     '&:hover': {
                       bgcolor: '#7a9286',
                     },
@@ -128,7 +134,7 @@ const ImagesCarousel = ({ images }: { images?: PropertyImage[] | null }) => {
                   }}
                   aria-label="Next image"
                 >
-                  <ChevronRight />
+                  <ChevronRight sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
                 </IconButton>
               </>
             )}
@@ -141,7 +147,7 @@ const ImagesCarousel = ({ images }: { images?: PropertyImage[] | null }) => {
             sx={{
               display: 'flex',
               gap: 1,
-              p: 2,
+              p: { xs: 1, sm: 2 },
               overflowX: 'auto',
               '&::-webkit-scrollbar': {
                 height: 6,
