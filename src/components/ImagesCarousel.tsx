@@ -66,6 +66,7 @@ const ImagesCarousel = ({ images }: { images?: PropertyImage[] | null }) => {
                 component="img"
                 src={currentImage.url}
                 alt={currentImage.caption || 'Imagen de la propiedad'}
+                decoding="async"
                 sx={{
                   width: '100%',
                   height: '100%',
@@ -174,8 +175,10 @@ const ImagesCarousel = ({ images }: { images?: PropertyImage[] | null }) => {
                 {image.url ? (
                   <Box
                     component="img"
-                    src={image.url}
+                    src={image.thumbnailUrl || image.url}
                     alt={`Thumbnail ${index + 1}`}
+                    loading="lazy"
+                    decoding="async"
                     sx={{
                       width: '100%',
                       height: '100%',

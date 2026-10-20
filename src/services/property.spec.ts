@@ -1,6 +1,31 @@
-import { describe, expect, it } from 'vitest';
+import { deleteObject, listAll, uploadBytes } from 'firebase/storage';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { processPropertyImageForUpload } from '@/utils/imageOptimizer';
 
 import { PropertyService } from './property';
+
+vi.mock('firebase/storage', () => ({
+  ref: vi.fn((_storage, path) => ({ path })),
+  uploadBytes: vi.fn(() => Promise.resolve()),
+  getDownloadURL: vi.fn((ref) => Promise.resolve(`https://storage.mock/${ref.path}`)),
+  listAll: vi.fn(),
+  deleteObject: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('@/firebase', () => ({
+  db: {},
+  storage: {},
+}));
+
+vi.mock('@/utils/imageOptimizer', () => ({
+  processPropertyImageForUpload: vi.fn(() =>
+    Promise.resolve({
+      main: new Blob(['main-bytes'], { type: 'image/webp' }),
+      thumbnail: new Blob(['thumb-bytes'], { type: 'image/webp' }),
+    }),
+  ),
+}));
 
 describe('PropertyService.formatPropertyData', () => {
   const service = new PropertyService();
@@ -122,5 +147,76 @@ describe('PropertyService.formatPropertyData', () => {
     ) as Record<string, unknown>;
 
     expect(result.status).toBe('no_disponible');
+  });
+});
+
+describe('PropertyService - Image upload and deletion with WebP optimization', () => {
+  const service = new PropertyService();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('compresses file to WebP and uploads both main and thumbnail images', async () => {
+    const file = new File(['fake-jpg'], 'photo.jpg', { type: 'image/jpeg' });
+    const result = await service.uploadPropertyImage('prop-123', file, 'Foto principal');
+
+    expect(processPropertyImageForUpload).toHaveBeenCalledWith(file);
+    expect(uploadBytes).toHaveBeenCalledTimes(2);
+
+    // Verify main upload
+    expect(uploadBytes).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: expect.stringMatching(/^properties\/prop-123\/images\/.*\.webp$/),
+      }),
+      expect.any(Blob),
+      { contentType: 'image/webp' },
+    );
+
+    // Verify thumbnail upload
+    expect(uploadBytes).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: expect.stringMatching(/^properties\/prop-123\/images\/.*_thumb\.webp$/),
+      }),
+      expect.any(Blob),
+      { contentType: 'image/webp' },
+    );
+
+    expect(result.id).toBeDefined();
+    expect(result.url).toMatch(/^https:\/\/storage\.mock\/properties\/prop-123\/images\/.*\.webp$/);
+    expect(result.thumbnailUrl).toMatch(
+      /^https:\/\/storage\.mock\/properties\/prop-123\/images\/.*_thumb\.webp$/,
+    );
+    expect(result.caption).toBe('Foto principal');
+    expect(result.order).toBe(0);
+    expect(result.uploadedAt).toBeInstanceOf(Date);
+  });
+
+  it('deletes both main and thumbnail images for given imageId', async () => {
+    const mockItems = [
+      { name: '123_abc.webp' },
+      { name: '123_abc_thumb.webp' },
+      { name: '999_other.webp' },
+    ];
+    vi.mocked(listAll).mockResolvedValueOnce({ items: mockItems } as any);
+
+    await service.deletePropertyImage('prop-123', '123_abc');
+
+    expect(listAll).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'properties/prop-123/images' }),
+    );
+    expect(deleteObject).toHaveBeenCalledTimes(2);
+    expect(deleteObject).toHaveBeenCalledWith({ name: '123_abc.webp' });
+    expect(deleteObject).toHaveBeenCalledWith({ name: '123_abc_thumb.webp' });
+  });
+
+  it('warns if no matching images are found in storage', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.mocked(listAll).mockResolvedValueOnce({ items: [] } as any);
+
+    await service.deletePropertyImage('prop-123', 'non-existent');
+
+    expect(deleteObject).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith('Image with ID non-existent not found in storage');
   });
 });

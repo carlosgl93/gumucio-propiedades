@@ -300,9 +300,9 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
     Array.from(files).forEach((file) => {
       if (!file.type.startsWith('image/')) {
         errors.push(`${file.name}: no es una imagen válida`);
-      } else if (file.size > 5 * 1024 * 1024) {
+      } else if (file.size > 15 * 1024 * 1024) {
         const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-        errors.push(`${file.name}: demasiado grande (${sizeMB}MB, máximo 5MB)`);
+        errors.push(`${file.name}: demasiado grande (${sizeMB}MB, máximo 15MB)`);
       } else {
         validFiles.push(file);
       }
@@ -1016,7 +1016,7 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
                       disabled={uploadingImages || uploadImage.isPending || !formData.id}
                     >
                       {uploadingImages
-                        ? `Subiendo ${uploadingCount} ${uploadingCount === 1 ? 'imagen' : 'imágenes'}...`
+                        ? `Optimizando y subiendo ${uploadingCount} ${uploadingCount === 1 ? 'imagen' : 'imágenes'}...`
                         : !formData.id
                           ? 'Guarda la propiedad antes de subir imágenes'
                           : 'Subir Imágenes'}
@@ -1231,8 +1231,9 @@ const SortableImageItem = ({ image, index, onRemove, isDeleting }: SortableImage
         </Box>
 
         <img
-          src={image.url}
+          src={image.thumbnailUrl || image.url}
           alt={image.caption || `Imagen ${index + 1}`}
+          loading="lazy"
           style={{
             width: '100%',
             height: 200,

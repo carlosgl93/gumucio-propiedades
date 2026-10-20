@@ -21,6 +21,7 @@ import { deleteObject, getDownloadURL, listAll, ref, uploadBytes } from 'firebas
 
 import { db, storage } from '@/firebase';
 import { PUBLIC_HIDDEN_STATUSES, Property, PropertyImage } from '@/models';
+import { processPropertyImageForUpload } from '@/utils/imageOptimizer';
 
 export type PropertyVisibility = 'public' | 'admin';
 
@@ -177,16 +178,27 @@ export class PropertyService {
     caption?: string,
   ): Promise<PropertyImage> {
     const imageId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const fileExtension = file.name.split('.').pop();
 
-    const imageRef = ref(storage, `properties/${propertyId}/images/${imageId}.${fileExtension}`);
+    // Compress client-side to WebP: main display image + thumbnail
+    const { main, thumbnail } = await processPropertyImageForUpload(file);
 
-    await uploadBytes(imageRef, file);
-    const url = await getDownloadURL(imageRef);
+    const mainRef = ref(storage, `properties/${propertyId}/images/${imageId}.webp`);
+    const thumbRef = ref(storage, `properties/${propertyId}/images/${imageId}_thumb.webp`);
+
+    await Promise.all([
+      uploadBytes(mainRef, main, { contentType: 'image/webp' }),
+      uploadBytes(thumbRef, thumbnail, { contentType: 'image/webp' }),
+    ]);
+
+    const [url, thumbnailUrl] = await Promise.all([
+      getDownloadURL(mainRef),
+      getDownloadURL(thumbRef),
+    ]);
 
     const propertyImage: PropertyImage = {
       id: imageId,
       url,
+      thumbnailUrl,
       caption,
       order: 0, // Will be updated when adding to property
       uploadedAt: new Date(),
@@ -196,17 +208,17 @@ export class PropertyService {
   }
 
   async deletePropertyImage(propertyId: string, imageId: string): Promise<void> {
-    // List all files in the property's images folder to find the one matching the imageId
+    // List all files in the property's images folder to find the ones matching the imageId
     const imagesRef = ref(storage, `properties/${propertyId}/images`);
     const imagesList = await listAll(imagesRef);
 
-    // Find the file that starts with the imageId (includes extension)
-    const imageToDelete = imagesList.items.find(
-      (item) => item.name.startsWith(imageId) || item.name === imageId,
+    // Find all files that start with or contain the imageId (includes .webp, _thumb.webp and legacy formats)
+    const imagesToDelete = imagesList.items.filter(
+      (item) => item.name.startsWith(imageId) || item.name.includes(imageId),
     );
 
-    if (imageToDelete) {
-      await deleteObject(imageToDelete);
+    if (imagesToDelete.length > 0) {
+      await Promise.all(imagesToDelete.map((item) => deleteObject(item)));
     } else {
       console.warn(`Image with ID ${imageId} not found in storage`);
     }

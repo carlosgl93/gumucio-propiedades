@@ -54,9 +54,14 @@ export const PropertyCard = ({ property }: PropertyCardProps) => {
         <CardMedia
           component="img"
           height="200"
-          image={property.images?.[0]?.url || '/placeholder-property.jpg'}
+          image={
+            property.images?.[0]?.thumbnailUrl ||
+            property.images?.[0]?.url ||
+            '/placeholder-property.jpg'
+          }
           alt={property.title || 'Propiedad sin título'}
           loading="lazy"
+          decoding="async"
           onLoad={() => setImageLoaded(true)}
           onError={() => setImageLoaded(true)}
           sx={{ opacity: imageLoaded ? 1 : 0, transition: 'opacity 0.3s' }}

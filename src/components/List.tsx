@@ -120,9 +120,14 @@ export const List = ({ items, title }: ListProps) => {
                 <PropertyCard>
                   <CardMedia
                     component="img"
-                    image={property.images?.[0]?.url || '/placeholder-property.jpg'}
+                    image={
+                      property.images?.[0]?.thumbnailUrl ||
+                      property.images?.[0]?.url ||
+                      '/placeholder-property.jpg'
+                    }
                     alt={property.title || 'Propiedad sin título'}
                     loading="lazy"
+                    decoding="async"
                   />
                   <CardContent>
                     {property.status && (
