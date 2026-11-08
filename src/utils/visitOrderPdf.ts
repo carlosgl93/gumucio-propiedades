@@ -5,7 +5,7 @@ import { PDF_CONFIG } from '@/config/pdfConfig';
 import { Property } from '@/models';
 
 import { formatPriceWithConversion } from './currencyConverter';
-import { formatChileanNumber } from './formatters';
+import { formatChileanNumber, formatLocation } from './formatters';
 
 interface VisitOrderData {
   visitorName: string;
@@ -84,7 +84,7 @@ export const generateVisitOrderPDF = async (
   // HEADER SECTION
   // ========================================
 
-  // Add logo to top right corner (4:3 aspect ratio)
+  // Add logo to top right corner (1:1 square aspect ratio matching original 591x591)
   try {
     const logoImg = new Image();
     logoImg.src = '/propiedades-gumucio-logo.png';
@@ -92,17 +92,17 @@ export const generateVisitOrderPDF = async (
       logoImg.onload = resolve;
       logoImg.onerror = reject;
     });
-    // Add logo at top right with 4:3 aspect ratio (20x15mm)
-    doc.addImage(logoImg, 'PNG', 170, 10, 20, 15);
+    // Square 20x20mm at x=170, y=8
+    doc.addImage(logoImg, 'PNG', 170, 8, 20, 20);
   } catch (error) {
     console.warn('Could not load logo:', error);
   }
 
-  // Top-right: Dates (positioned below logo)
+  // Top-right: Dates (spaced below logo)
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Emitida: ${emissionDate}`, 190, 28, { align: 'right' });
-  doc.text(`Plazo máximo para la visita: ${maxVisitDate}`, 190, 33, { align: 'right' });
+  doc.text(`Emitida: ${emissionDate}`, 190, 34, { align: 'right' });
+  doc.text(`Plazo máximo para la visita: ${maxVisitDate}`, 190, 39, { align: 'right' });
 
   // Title
   doc.setFontSize(16);
@@ -111,13 +111,13 @@ export const generateVisitOrderPDF = async (
 
   // Line separator (positioned below dates with spacing)
   doc.setLineWidth(0.3);
-  doc.line(20, 42, 190, 42);
+  doc.line(20, 44, 190, 44);
 
   // ========================================
   // INFO ROW (Cliente, Propiedad, Fecha)
   // ========================================
 
-  let yPos = 50;
+  let yPos = 52;
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
 
@@ -146,14 +146,15 @@ export const generateVisitOrderPDF = async (
   doc.text(getPropertyTypeLabel(property), 20, yPos);
   yPos += 5;
 
-  // Property Address
+  // Property Address with capitalized location
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  const fullAddress =
-    `${property.address?.street || ''}, ${property.address?.commune || ''}, ${property.address?.city || ''}`.trim();
-  const addressLines = doc.splitTextToSize(fullAddress, 90);
+  const street = property.address?.street?.trim() || '';
+  const loc = formatLocation(property.address?.commune, property.address?.city);
+  const fullAddress = [street, loc].filter(Boolean).join(', ');
+  const addressLines = doc.splitTextToSize(fullAddress, 110);
   doc.text(addressLines, 20, yPos);
-  yPos += 10;
+  yPos += addressLines.length * 4 + 4;
 
   // Save Y position for details
   const contentStartY = yPos;
@@ -174,7 +175,7 @@ export const generateVisitOrderPDF = async (
   // Format price with conversion to UF
   const priceText = await formatPriceWithConversion(
     property.price || 0,
-    property.currency || 'USD',
+    property.currency || 'CLP',
     'UF', // Convert to UF
   );
   const priceLines = doc.splitTextToSize(priceText, 130);
@@ -224,18 +225,28 @@ export const generateVisitOrderPDF = async (
 
   detailsY += 2;
 
-  // Amenities (show property's amenities)
+  // Amenities (2-column layout to save vertical space)
   if (property.amenities && property.amenities.length > 0) {
-    // Limit to first 8 amenities to fit in space
-    const displayAmenities = property.amenities.slice(0, 8);
+    const displayAmenities = property.amenities.slice(0, 10);
+    const half = Math.ceil(displayAmenities.length / 2);
+    const startAmenitiesY = detailsY;
+    let maxAmenitiesY = startAmenitiesY;
 
-    displayAmenities.forEach((amenity) => {
-      doc.text(`x  ${amenity}`, detailsX + 2, detailsY);
-      detailsY += 4;
+    displayAmenities.forEach((amenity, idx) => {
+      const col = idx < half ? 0 : 1;
+      const row = idx < half ? idx : idx - half;
+      const currentY = startAmenitiesY + row * 4;
+      doc.text(`•  ${amenity}`, detailsX + 2 + col * 55, currentY);
+      if (currentY + 4 > maxAmenitiesY) {
+        maxAmenitiesY = currentY + 4;
+      }
     });
+
+    detailsY = maxAmenitiesY + 2;
   }
 
   // QR Code (right side)
+  let qrEndY = contentStartY;
   try {
     const propertyUrl = `${PDF_CONFIG.baseUrl}/property/${property.id}`;
     const qrDataUrl = await QRCode.toDataURL(propertyUrl, {
@@ -253,8 +264,9 @@ export const generateVisitOrderPDF = async (
     // Label below QR
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
-    doc.text('Escanea para ver', 167, contentStartY + 27, { align: 'center' });
-    doc.text('la propiedad', 167, contentStartY + 30, { align: 'center' });
+    doc.text('Escanea para ver', 167, contentStartY + 28, { align: 'center' });
+    doc.text('la propiedad', 167, contentStartY + 31, { align: 'center' });
+    qrEndY = contentStartY + 33;
   } catch (error) {
     console.warn('Could not generate QR code:', error);
   }
@@ -263,7 +275,8 @@ export const generateVisitOrderPDF = async (
   // LEGAL TEXT SECTION
   // ========================================
 
-  yPos = contentStartY + 50; // Position after image/details section
+  // Dynamic positioning prevents overflow regardless of specs and amenities count
+  yPos = Math.max(detailsY + 5, qrEndY + 5);
 
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
@@ -273,7 +286,7 @@ export const generateVisitOrderPDF = async (
 
   const legalLines = doc.splitTextToSize(legalText, 170);
   doc.text(legalLines, 20, yPos);
-  yPos += legalLines.length * 3 + 10;
+  yPos += legalLines.length * 3 + 12;
 
   // ========================================
   // SIGNATURE SECTION
@@ -282,17 +295,18 @@ export const generateVisitOrderPDF = async (
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
 
-  // Firma del Corredor (left)
+  // Position signatures with comfortable margin above footer
+  const signatureY = Math.max(yPos, 225);
   const signatureLeftX = 50;
   const signatureRightX = 150;
 
   // Left signature
-  doc.line(30, yPos, 70, yPos); // signature line
-  doc.text('Firma del Corredor', signatureLeftX, yPos + 5, { align: 'center' });
+  doc.line(30, signatureY, 70, signatureY); // signature line
+  doc.text('Firma del Corredor', signatureLeftX, signatureY + 5, { align: 'center' });
 
   // Right signature
-  doc.line(130, yPos, 170, yPos); // signature line
-  doc.text('Firma del Visitante', signatureRightX, yPos + 5, { align: 'center' });
+  doc.line(130, signatureY, 170, signatureY); // signature line
+  doc.text('Firma del Visitante', signatureRightX, signatureY + 5, { align: 'center' });
 
   // ========================================
   // FOOTER
