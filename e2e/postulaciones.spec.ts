@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import path from 'node:path';
 
 test('admin can create postulación and see verdict panel after upload', async ({ page }) => {
