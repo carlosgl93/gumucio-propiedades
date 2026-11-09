@@ -41,7 +41,7 @@ describe('score', () => {
     expect(r.score).toBeGreaterThanOrEqual(90);
   });
 
-  it('returns warn (70-89) when cross-check fails', () => {
+  it('returns fail (<70) when identity cross-check fails', () => {
     const r = score({
       extracted: { rut: '99999999-9', type: 'dicom' },
       ela: goodEla,
@@ -51,7 +51,7 @@ describe('score', () => {
       monthlyRent: 500000,
       applicant: baseApplicant,
     });
-    expect(r.verdict).toBe('warn');
+    expect(r.verdict).toBe('fail');
   });
 
   it('returns fail (<70) when ELA regional fires AND cross-check fires', () => {

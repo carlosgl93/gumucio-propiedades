@@ -1,12 +1,12 @@
 import { logger } from 'firebase-functions';
 
-import { createClient } from './minimaxClient';
+import { createClient } from './geminiClient';
 import type { LlmPromptParts } from './llmPrompt';
 import type { LlmEvaluation } from './types';
 import type { DocType } from '../extractors/types';
 
 const DEFAULT_TIMEOUT_MS = 60_000;
-const DEFAULT_MODEL = 'MiniMax-M3';
+const DEFAULT_MODEL = 'gemini-3.5-flash';
 
 export interface LlmEvalOptions {
   timeoutMs?: number;
@@ -18,9 +18,9 @@ export async function llmEvaluate(
   _type: DocType,
   opts: LlmEvalOptions = {},
 ): Promise<LlmEvaluation | null> {
-  const apiKey = process.env.MINIMAX_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    logger.warn('MINIMAX_API_KEY not set; LLM eval disabled');
+    logger.warn('GEMINI_API_KEY not set; LLM eval disabled');
     return null;
   }
 
@@ -64,12 +64,11 @@ async function callWithTimeout(
 
 function parseLlmResponse(text: string | undefined): LlmEvaluation | null {
   if (!text) return null;
-  // Strip code fences and <think>...</think> reasoning blocks (M3 emits them).
+  // Strip code fences and reasoning blocks if present.
   const cleaned = text
     .replace(/<think>[\s\S]*?<\/think>/g, '')
     .replace(/^```json|^```|```$/gm, '')
     .trim();
-  // Try whole-string first; otherwise scan for the first {...} JSON object.
   const candidates: string[] = [cleaned];
   const firstBrace = cleaned.indexOf('{');
   const lastBrace = cleaned.lastIndexOf('}');

@@ -109,6 +109,14 @@ export function score(input: ScoreInput): VerificationResult {
     });
   }
 
+  // Hard fail conditions: Identity mismatch must never pass or warn
+  const hasIdentityMismatch = input.crossCheckFlags.some(
+    (f) => f.code === 'identity_mismatch' || f.code === 'applicant_rut_mismatch' || f.code === 'applicant_name_mismatch',
+  );
+  if (hasIdentityMismatch && totalPts >= WARN_THRESHOLD) {
+    totalPts = Math.min(totalPts, WARN_THRESHOLD - 1);
+  }
+
   return {
     score: totalPts,
     verdict: verdictFromScore(totalPts),

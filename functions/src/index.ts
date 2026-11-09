@@ -8,7 +8,7 @@ import express from 'express';
 import { newDiaryEntry } from './newDiaryEntry';
 import { verifyDocumentHandler, upload } from './verifyDocument/handler';
 
-const minimaxApiKey = defineSecret('MINIMAX_API_KEY');
+const minimaxApiKey = defineSecret('GEMINI_API_KEY');
 
 dotenv.config();
 admin.initializeApp();

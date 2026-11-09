@@ -6,7 +6,7 @@ import multer from 'multer';
 import { PDFParse } from 'pdf-parse';
 import sharp from 'sharp';
 
-const minimaxApiKey = defineSecret('MINIMAX_API_KEY');
+const minimaxApiKey = defineSecret('GEMINI_API_KEY');
 
 import { extract, type Extracted } from './extractors';
 import type { ApplicantContext, DocType } from './extractors/types';
@@ -65,7 +65,7 @@ const FAIL_FLAGS = {
 export const verifyDocumentHandler = async (req: Request, res: Response): Promise<void> => {
   const start = Date.now();
   try {
-    process.env.MINIMAX_API_KEY = minimaxApiKey.value();
+    process.env.GEMINI_API_KEY = minimaxApiKey.value();
     const file = (req as Request & { file?: Express.Multer.File }).file;
     const { type, applicantName, applicantRut, monthlyRent } = req.body as Record<string, string>;
 

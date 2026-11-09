@@ -1,5 +1,5 @@
 // Load .env from functions/ if present (real LLM calls when key is set)
-try { require('dotenv').config(); } catch (_) { /* dotenv optional */ }
+try { require('dotenv').config({ path: require('path').resolve(__dirname, '.env') }); } catch (_) { /* dotenv optional */ }
 
 process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
 process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8081';
