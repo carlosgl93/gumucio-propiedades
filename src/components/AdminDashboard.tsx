@@ -33,17 +33,20 @@ import {
   IconButton,
   InputAdornment,
   Paper,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tabs,
   TextField,
   Typography,
 } from '@mui/material';
 
 import { Property } from '@/models';
+import { PostulacionesList } from '@/sections/Postulaciones';
 import { formatPrice } from '@/utils/formatters';
 
 import { useAuth } from '../hooks/useAuth';
@@ -54,6 +57,7 @@ import { PropertyShareButtons } from './PropertyShareButtons';
 import { VisitOrderDialog } from './VisitOrderDialog';
 
 export const AdminDashboard = () => {
+  const [currentTab, setCurrentTab] = useState<'Propiedades' | 'Postulaciones'>('Propiedades');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -183,51 +187,64 @@ export const AdminDashboard = () => {
 
   if (showForm) {
     return (
-      <PropertyForm
-        property={selectedProperty}
-        onSave={handleSaveProperty}
-        onCancel={handleCancelForm}
-      />
+      <Box p={3}>
+        <PropertyForm
+          property={selectedProperty || undefined}
+          onSave={handleSaveProperty}
+          onCancel={handleCancelForm}
+        />
+      </Box>
     );
   }
 
   return (
-    <Box
-      sx={{
-        p: 3,
-      }}
-    >
+    <Box p={3}>
       {/* Header */}
       <Box
         display="flex"
         justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-        sx={{
-          flexDirection: { xs: 'column', md: 'row' },
-          gap: { xs: 2, md: 0 },
-        }}
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        gap={2}
+        mb={4}
       >
         <Box>
-          <Typography variant="h4" component="h1">
+          <Typography variant="h4" component="h1" gutterBottom>
             Panel de Administración
           </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            Bienvenida, {user?.email}
+          <Typography variant="body1" color="text.secondary">
+            Bienvenido, {user?.displayName || user?.email}
           </Typography>
         </Box>
-        <Box display="flex" gap={1}>
-          <IconButton onClick={handleRefresh} disabled={isLoading} title="Actualizar datos">
-            <Refresh />
-          </IconButton>
-          <Button variant="outlined" startIcon={<ExitToApp />} onClick={logout} color="inherit">
+        <Box display="flex" gap={1} flexWrap="wrap">
+          <Button
+            variant="outlined"
+            startIcon={<Refresh />}
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
+            Actualizar
+          </Button>
+          <Button variant="outlined" color="error" startIcon={<ExitToApp />} onClick={logout}>
             Cerrar Sesión
           </Button>
         </Box>
       </Box>
 
+      {/* Tabs */}
+      <Tabs
+        value={currentTab}
+        onChange={(_, value: 'Propiedades' | 'Postulaciones') => setCurrentTab(value)}
+        sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
+      >
+        <Tab label="Propiedades" value="Propiedades" />
+        <Tab label="Postulaciones" value="Postulaciones" />
+      </Tabs>
+
+      {currentTab === 'Postulaciones' && user?.uid && <PostulacionesList uploadedBy={user.uid} />}
+
       {/* Error Alert */}
-      {error && (
+      {currentTab === 'Propiedades' && error && (
         <Alert
           severity="error"
           sx={{ mb: 3 }}
@@ -237,270 +254,301 @@ export const AdminDashboard = () => {
             </Button>
           }
         >
-          Error al cargar las propiedades: {error.message}
+          Error al cargar propiedades: {error.message}
         </Alert>
       )}
 
       {/* Delete Error */}
-      {deleteProperty.error && (
+      {currentTab === 'Propiedades' && deleteProperty.error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => deleteProperty.reset()}>
           Error al eliminar propiedad: {deleteProperty.error.message}
         </Alert>
       )}
 
-      {/* Stats Cards */}
-      <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={2}>
-                <Home color="primary" />
-                <Box>
-                  <Typography variant="h4">
-                    {statsLoading ? <CircularProgress size={24} /> : stats.total}
-                  </Typography>
-                  <Typography color="text.secondary">Total Propiedades</Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={2}>
-                <TrendingUp color="success" />
-                <Box>
-                  <Typography variant="h4">
-                    {statsLoading ? <CircularProgress size={24} /> : stats.available}
-                  </Typography>
-                  <Typography color="text.secondary">Disponibles</Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={2}>
-                <Visibility color="info" />
-                <Box>
-                  <Typography variant="h4">
-                    {statsLoading ? <CircularProgress size={24} /> : stats.sold}
-                  </Typography>
-                  <Typography color="text.secondary">Vendidas</Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" gap={2}>
-                <Star color="warning" />
-                <Box>
-                  <Typography variant="h4">
-                    {statsLoading ? <CircularProgress size={24} /> : stats.featured}
-                  </Typography>
-                  <Typography color="text.secondary">Destacadas</Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      {currentTab === 'Propiedades' && (
+        <>
+          {/* Stats Cards */}
+          <Grid container spacing={3} mb={4}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Home color="primary" />
+                    <Box>
+                      <Typography variant="h4">
+                        {statsLoading ? <CircularProgress size={24} /> : stats.total}
+                      </Typography>
+                      <Typography color="text.secondary">Total Propiedades</Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <TrendingUp color="success" />
+                    <Box>
+                      <Typography variant="h4">
+                        {statsLoading ? <CircularProgress size={24} /> : stats.available}
+                      </Typography>
+                      <Typography color="text.secondary">Disponibles</Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Visibility color="info" />
+                    <Box>
+                      <Typography variant="h4">
+                        {statsLoading ? <CircularProgress size={24} /> : stats.sold}
+                      </Typography>
+                      <Typography color="text.secondary">Vendidas</Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Star color="warning" />
+                    <Box>
+                      <Typography variant="h4">
+                        {statsLoading ? <CircularProgress size={24} /> : stats.featured}
+                      </Typography>
+                      <Typography color="text.secondary">Destacadas</Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
 
-      {/* Properties Table */}
-      <Card>
-        <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="h6">
-              Propiedades
-              {!isLoading && (
-                <Chip
-                  label={`${filteredProperties.length} ${searchQuery ? 'filtradas' : 'total'}`}
-                  size="small"
-                  sx={{ ml: 1 }}
-                />
-              )}
-            </Typography>
-            <Box display="flex" gap={1}>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<AutoFixHigh />}
-                onClick={() => setMigrationDialogOpen(true)}
-                disabled={isLoading}
+          {/* Properties Table */}
+          <Card>
+            <CardContent>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+                flexDirection={{ xs: 'column', sm: 'row' }}
+                gap={2}
+                mb={3}
               >
-                Optimizar a WebP
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<Add />}
-                onClick={handleCreateProperty}
-                disabled={isLoading}
-              >
-                Nueva Propiedad
-              </Button>
-            </Box>
-          </Box>
-
-          {/* Search Bar */}
-          <TextField
-            fullWidth
-            placeholder="Buscar por título, dirección, comuna o ciudad..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ mb: 2 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search />
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          {isLoading ? (
-            <Box display="flex" justifyContent="center" p={4}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <TableContainer component={Paper} variant="outlined">
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Título</TableCell>
-                    <TableCell>Propietario</TableCell>
-                    <TableCell>Tipo</TableCell>
-                    <TableCell>Precio</TableCell>
-                    <TableCell>Estado</TableCell>
-                    <TableCell>Ciudad</TableCell>
-                    <TableCell>Destacada</TableCell>
-                    <TableCell>Activa</TableCell>
-                    <TableCell align="center">Acciones</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredProperties.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={9} align="center">
-                        <Typography color="text.secondary">
-                          {searchQuery
-                            ? 'No se encontraron propiedades con ese criterio de búsqueda'
-                            : 'No hay propiedades registradas'}
-                        </Typography>
-                        {!searchQuery && (
-                          <Button
-                            variant="outlined"
-                            startIcon={<Add />}
-                            onClick={handleCreateProperty}
-                            sx={{ mt: 2 }}
-                          >
-                            Crear Primera Propiedad
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredProperties.map((property) => (
-                      <TableRow key={property.id}>
-                        <TableCell>
-                          <Typography variant="subtitle2">
-                            {property.title || 'Sin título'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>{property.ownerName || '-'}</TableCell>
-                        <TableCell>
-                          {property.propertyType
-                            ? property.propertyType.charAt(0).toUpperCase() +
-                              property.propertyType.slice(1)
-                            : '-'}
-                        </TableCell>
-                        <TableCell>
-                          {property.price > 0
-                            ? formatPrice(property.price, property.currency)
-                            : 'Consultar precio'}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={getStatusLabel(property.status)}
-                            color={
-                              getStatusColor(property.status) as
-                                | 'error'
-                                | 'success'
-                                | 'default'
-                                | 'info'
-                                | 'warning'
-                                | 'primary'
-                                | 'secondary'
-                            }
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>{property.address?.city || '-'}</TableCell>
-                        <TableCell>
-                          {property.isFeatured ? <Star color="warning" /> : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={property.isActive ? 'Sí' : 'No'}
-                            color={property.isActive ? 'success' : 'default'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <IconButton
-                            onClick={() => handleEditProperty(property)}
-                            size="small"
-                            title="Editar"
-                            disabled={deleteProperty.isPending}
-                          >
-                            <Edit />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => handleVisitOrderClick(property)}
-                            size="small"
-                            color="secondary"
-                            title="Generar Orden de Visita"
-                            disabled={deleteProperty.isPending}
-                          >
-                            <Description />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => handleShareClick(property)}
-                            size="small"
-                            color="primary"
-                            title="Compartir"
-                            disabled={deleteProperty.isPending}
-                          >
-                            <Share />
-                          </IconButton>
-                          <IconButton
-                            onClick={() => handleDeleteClick(property)}
-                            size="small"
-                            color="error"
-                            title="Eliminar"
-                            disabled={deleteProperty.isPending}
-                          >
-                            {deleteProperty.isPending && propertyToDelete?.id === property.id ? (
-                              <CircularProgress size={16} />
-                            ) : (
-                              <Delete />
-                            )}
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                <Typography variant="h6" component="h2">
+                  Propiedades
+                  {!isLoading && (
+                    <Chip
+                      label={`${filteredProperties.length} ${searchQuery ? 'filtradas' : 'total'}`}
+                      size="small"
+                      sx={{ ml: 1 }}
+                    />
                   )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </CardContent>
-      </Card>
+                </Typography>
+                <Box display="flex" gap={1}>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<AutoFixHigh />}
+                    onClick={() => setMigrationDialogOpen(true)}
+                    disabled={isLoading}
+                  >
+                    Optimizar a WebP
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={handleCreateProperty}
+                    disabled={isLoading}
+                  >
+                    Nueva Propiedad
+                  </Button>
+                </Box>
+              </Box>
+
+              {/* Search Bar */}
+              <Box mb={3}>
+                <TextField
+                  fullWidth
+                  placeholder="Buscar por título, dirección, comuna o ciudad..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  size="small"
+                />
+              </Box>
+
+              {isLoading ? (
+                <Box display="flex" justifyContent="center" p={4}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <TableContainer component={Paper} variant="outlined">
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Título</TableCell>
+                        <TableCell>Propietario</TableCell>
+                        <TableCell>Tipo</TableCell>
+                        <TableCell>Precio</TableCell>
+                        <TableCell>Estado</TableCell>
+                        <TableCell>Ciudad</TableCell>
+                        <TableCell>Destacada</TableCell>
+                        <TableCell>Activa</TableCell>
+                        <TableCell align="center">Acciones</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {filteredProperties.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={9} align="center">
+                            <Typography color="text.secondary">
+                              {searchQuery
+                                ? 'No se encontraron propiedades con ese criterio de búsqueda'
+                                : 'No hay propiedades registradas'}
+                            </Typography>
+                            {!searchQuery && (
+                              <Button
+                                variant="outlined"
+                                startIcon={<Add />}
+                                onClick={handleCreateProperty}
+                                sx={{ mt: 2 }}
+                              >
+                                Crear la primera propiedad
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredProperties.map((property) => (
+                          <TableRow key={property.id} hover>
+                            <TableCell>
+                              <Typography variant="subtitle2" noWrap sx={{ maxWidth: 200 }}>
+                                {property.title}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" noWrap>
+                                {property.address.street}, {property.address.commune}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>{property.ownerName || '-'}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={property.type}
+                                size="small"
+                                variant="outlined"
+                                sx={{ textTransform: 'capitalize' }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              {formatPrice(property.price.amount, property.price.currency)}
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={getStatusLabel(property.status)}
+                                color={getStatusColor(property.status)}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell>{property.address.city}</TableCell>
+                            <TableCell>
+                              {property.featured ? (
+                                <Star color="warning" fontSize="small" />
+                              ) : (
+                                <Typography variant="caption" color="text.secondary">
+                                  No
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={property.active ? 'Activa' : 'Inactiva'}
+                                color={property.active ? 'success' : 'default'}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <IconButton
+                                onClick={() => handleEditProperty(property)}
+                                size="small"
+                                color="primary"
+                                title="Editar"
+                                disabled={deleteProperty.isPending}
+                              >
+                                <Edit />
+                              </IconButton>
+                              <IconButton
+                                onClick={() => handleVisitOrderClick(property)}
+                                size="small"
+                                color="secondary"
+                                title="Generar Orden de Visita"
+                                disabled={deleteProperty.isPending}
+                              >
+                                <Description />
+                              </IconButton>
+                              <IconButton
+                                onClick={() => handleShareClick(property)}
+                                size="small"
+                                color="primary"
+                                title="Compartir"
+                                disabled={deleteProperty.isPending}
+                              >
+                                <Share />
+                              </IconButton>
+                              <IconButton
+                                onClick={() => handleDeleteClick(property)}
+                                size="small"
+                                color="error"
+                                title="Eliminar"
+                                disabled={deleteProperty.isPending}
+                              >
+                                {deleteProperty.isPending &&
+                                propertyToDelete?.id === property.id ? (
+                                  <CircularProgress size={16} />
+                                ) : (
+                                  <Delete />
+                                )}
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Floating Action Button for Mobile */}
+          <Fab
+            color="primary"
+            sx={{
+              position: 'fixed',
+              bottom: 16,
+              right: 16,
+              display: { xs: 'flex', md: 'none' },
+            }}
+            onClick={handleCreateProperty}
+            disabled={isLoading}
+          >
+            <Add />
+          </Fab>
+        </>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
@@ -576,21 +624,6 @@ export const AdminDashboard = () => {
           refetch();
         }}
       />
-
-      {/* Floating Action Button for Mobile */}
-      <Fab
-        color="primary"
-        sx={{
-          position: 'fixed',
-          bottom: 16,
-          right: 16,
-          display: { xs: 'flex', md: 'none' },
-        }}
-        onClick={handleCreateProperty}
-        disabled={isLoading}
-      >
-        <Add />
-      </Fab>
     </Box>
   );
 };

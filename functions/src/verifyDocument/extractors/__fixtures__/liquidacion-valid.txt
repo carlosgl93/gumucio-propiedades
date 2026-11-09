@@ -1,0 +1,9 @@
+LIQUIDACION DE SUELDO
+RUT: 15.987.654-3
+Trabajador: ANA RAMIREZ
+Empleador: EMPRESA XYZ S.A.
+Empleador RUT: 76.123.456-0
+Periodo: 2026-08
+Sueldo bruto: 1.500.000
+Descuentos legales: 280.000
+Sueldo liquido: 1.220.000
