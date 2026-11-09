@@ -137,7 +137,7 @@ export const verifyDocumentHandler = async (req: Request, res: Response): Promis
       const viewport = page.getViewport({ scale: 1 });
       const canvas = createCanvas(viewport.width, viewport.height);
       const ctx = canvas.getContext('2d');
-      await page.render({ canvasContext: ctx as never, viewport }).promise;
+      await page.render({ canvasContext: ctx as never, viewport, canvas: canvas as never }).promise;
       pngBuf = await sharp(await canvas.encode('png')).png().toBuffer();
       await pdf.destroy();
     } catch (err) {
@@ -153,7 +153,7 @@ export const verifyDocumentHandler = async (req: Request, res: Response): Promis
 
     const crossResult = crossCheckFor(docType, extractedRaw, applicant);
 
-    const prompt = buildLlmPrompt(extracted, applicant, docType, pngBuf);
+    const prompt = buildLlmPrompt(extracted as unknown as Record<string, unknown>, applicant, docType, pngBuf);
     let llm: Awaited<ReturnType<typeof llmEvaluate>>;
     try {
       llm = await llmEvaluate(pngBuf, prompt, docType);
@@ -163,7 +163,7 @@ export const verifyDocumentHandler = async (req: Request, res: Response): Promis
     }
 
     const result = score({
-      extracted,
+      extracted: extracted as unknown as Record<string, unknown>,
       ela,
       crossCheckFlags: crossResult.crossCheckFlags,
       employerFormatFlags: crossResult.employerFormatFlags,

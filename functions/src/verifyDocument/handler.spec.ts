@@ -99,7 +99,7 @@ describe('verifyDocumentHandler', () => {
     };
     mockGetDocument.mockReturnValueOnce({
       promise: Promise.resolve({ numPages: 1, getPage: () => Promise.resolve(fakePage), destroy: async () => undefined }),
-    } as unknown);
+    } as unknown as ReturnType<typeof getDocument>);
 
     const app = buildApp();
     const res = await request(app)
