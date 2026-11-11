@@ -453,7 +453,15 @@ export const AdminDashboard = () => {
                               />
                             </TableCell>
                             <TableCell>
-                              {formatPrice(property.price.amount, property.price.currency)}
+                              {formatPrice(
+                                typeof property.price === 'number'
+                                  ? property.price
+                                  : ((property.price as unknown as { amount?: number })?.amount ??
+                                      0),
+                                property.currency ||
+                                  (property.price as unknown as { currency?: string })?.currency ||
+                                  'CLP',
+                              )}
                             </TableCell>
                             <TableCell>
                               <Chip

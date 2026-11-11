@@ -6,7 +6,8 @@
  * - NIO: es-NI currency style
  * - Other currencies: fall back to `<CURRENCY> <number>`
  */
-export const formatPrice = (price: number, currency: string): string => {
+export const formatPrice = (price: number, currency: string = 'CLP'): string => {
+  if (price === undefined || price === null || isNaN(price)) return '-';
   switch (currency) {
     case 'CLP':
       return new Intl.NumberFormat('es-CL', {

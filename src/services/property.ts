@@ -50,11 +50,14 @@ export class PropertyService {
     property: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<string> {
     const now = new Date();
-    const propertyData = {
+    const propertyData: Record<string, unknown> = {
       ...property,
       createdAt: Timestamp.fromDate(now),
       updatedAt: Timestamp.fromDate(now),
     };
+    Object.keys(propertyData).forEach(
+      (key) => propertyData[key] === undefined && delete propertyData[key],
+    );
 
     const docRef = await addDoc(collection(db, this.collectionName), propertyData);
     return docRef.id;
@@ -62,10 +65,15 @@ export class PropertyService {
 
   async updateProperty(id: string, updates: Partial<Property>): Promise<void> {
     const docRef = doc(db, this.collectionName, id);
-    await updateDoc(docRef, {
+    const updateData: Record<string, unknown> = {
       ...updates,
       updatedAt: Timestamp.fromDate(new Date()),
-    });
+    };
+    Object.keys(updateData).forEach(
+      (key) => updateData[key] === undefined && delete updateData[key],
+    );
+
+    await updateDoc(docRef, updateData);
   }
 
   async deleteProperty(id: string): Promise<void> {

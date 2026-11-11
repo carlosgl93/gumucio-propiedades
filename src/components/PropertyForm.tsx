@@ -500,11 +500,13 @@ export const PropertyForm = ({ property, onSave, onCancel }: PropertyFormProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Normalizar ownerName: vacío -> undefined para no contaminar Firestore
-    const payload: Partial<Property> = {
-      ...formData,
-      ownerName: formData.ownerName?.trim() || undefined,
-    };
+    // Normalizar ownerName: vacío -> omitir para no enviar undefined a Firestore
+    const payload: Partial<Property> = { ...formData };
+    if (formData.ownerName?.trim()) {
+      payload.ownerName = formData.ownerName.trim();
+    } else {
+      delete payload.ownerName;
+    }
 
     // Validate form
     const validation = validateProperty(payload);
