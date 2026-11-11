@@ -1,8 +1,8 @@
 // functions/src/verifyDocument/handler.ts
 import { logger } from 'firebase-functions';
 import { defineSecret } from 'firebase-functions/params';
-import type { Request, Response } from 'express';
-import multer from 'multer';
+import type { Request, Response, NextFunction } from 'express';
+import Busboy from 'busboy';
 import { PDFParse } from 'pdf-parse';
 import sharp from 'sharp';
 
@@ -21,17 +21,73 @@ import { buildLlmPrompt } from './rules/llmPrompt';
 import { score } from './rules/score';
 import type { Flag, VerificationResult } from './rules/types';
 
-export const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype !== 'application/pdf') {
-      cb(new Error('Only PDF allowed'));
-      return;
+export interface UploadedFile {
+  buffer: Buffer;
+  mimetype: string;
+  originalname: string;
+  size: number;
+}
+
+export const parseMultipart = (req: Request, res: Response, next: NextFunction): void => {
+  const contentType = req.headers['content-type'] || '';
+  if (!contentType.includes('multipart/form-data')) {
+    return next();
+  }
+
+  let busboy: ReturnType<typeof Busboy>;
+  try {
+    busboy = Busboy({
+      headers: req.headers,
+      limits: { fileSize: 5 * 1024 * 1024 },
+    });
+  } catch (err) {
+    logger.error('Failed to initialize busboy', err);
+    res.status(400).json({ error: 'Invalid multipart request' });
+    return;
+  }
+
+  const fields: Record<string, string> = {};
+  let fileData: UploadedFile | undefined;
+  const fileChunks: Buffer[] = [];
+
+  busboy.on('field', (name, val) => {
+    fields[name] = val;
+  });
+
+  busboy.on('file', (_name, fileStream, info) => {
+    const { filename, mimeType } = info;
+    fileStream.on('data', (data: Buffer) => fileChunks.push(data));
+    fileStream.on('end', () => {
+      const buffer = Buffer.concat(fileChunks);
+      fileData = {
+        buffer,
+        originalname: filename || 'document.pdf',
+        mimetype: mimeType,
+        size: buffer.length,
+      };
+    });
+  });
+
+  busboy.on('finish', () => {
+    req.body = { ...req.body, ...fields };
+    if (fileData) {
+      (req as unknown as { file?: UploadedFile }).file = fileData;
     }
-    cb(null, true);
-  },
-});
+    next();
+  });
+
+  busboy.on('error', (err) => {
+    logger.error('busboy error parsing multipart', err);
+    res.status(500).json({ error: 'Failed to parse form data' });
+  });
+
+  const raw = (req as Request & { rawBody?: Buffer }).rawBody;
+  if (raw && Buffer.isBuffer(raw)) {
+    busboy.end(raw);
+  } else {
+    req.pipe(busboy);
+  }
+};
 
 type CrossResult = { crossCheckFlags: Flag[]; employerFormatFlags: Flag[] };
 
@@ -77,7 +133,7 @@ export const verifyDocumentHandler = async (req: Request, res: Response): Promis
   const start = Date.now();
   try {
     process.env.GEMINI_API_KEY = minimaxApiKey.value();
-    const file = (req as Request & { file?: Express.Multer.File }).file;
+    const file = (req as unknown as { file?: UploadedFile }).file;
     const { type, applicantName, applicantRut, monthlyRent } = req.body as Record<string, string>;
 
     if (!type || !['dicom', 'liquidacion', 'carpeta_tributaria'].includes(type)) {

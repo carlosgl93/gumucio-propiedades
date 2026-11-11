@@ -6,7 +6,7 @@ import cors from 'cors';
 import express from 'express';
 
 import { newDiaryEntry } from './newDiaryEntry';
-import { verifyDocumentHandler, upload } from './verifyDocument/handler';
+import { verifyDocumentHandler, parseMultipart } from './verifyDocument/handler';
 
 const minimaxApiKey = defineSecret('GEMINI_API_KEY');
 
@@ -19,7 +19,7 @@ app.use(cors({ origin: true }));
 app.use(express.json());
 
 app.post('/newDiaryEntry', newDiaryEntry);
-app.post('/verifyDocument', upload.single('file'), verifyDocumentHandler);
-app.post('/api/verifyDocument', upload.single('file'), verifyDocumentHandler);
+app.post('/verifyDocument', parseMultipart, verifyDocumentHandler);
+app.post('/api/verifyDocument', parseMultipart, verifyDocumentHandler);
 
 export const api = functions.runWith({ secrets: [minimaxApiKey] }).https.onRequest(app);
