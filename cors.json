@@ -1,0 +1,15 @@
+[
+  {
+    "origin": [
+      "https://www.propiedadesgumucio.cl",
+      "https://gumucio-pro.web.app",
+      "https://gumucio-pro.firebaseapp.com",
+      "http://localhost:5173",
+      "http://localhost:5000",
+      "*"
+    ],
+    "method": ["GET", "HEAD", "PUT", "POST", "DELETE"],
+    "responseHeader": ["Content-Type", "Access-Control-Allow-Origin", "x-goog-resumable"],
+    "maxAgeSeconds": 3600
+  }
+]
