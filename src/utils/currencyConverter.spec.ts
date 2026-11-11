@@ -31,7 +31,7 @@ describe('currencyConverter', () => {
 
       const uf = await getUfValue();
       expect(uf).toBe(40000);
-      expect(fetch).toHaveBeenCalledWith('https://mindicador.cl/api/uf');
+      expect(fetch).toHaveBeenCalledWith('https://mindicador.cl/api/uf', expect.any(Object));
     });
 
     it('caches UF value in localStorage', async () => {
@@ -56,6 +56,19 @@ describe('currencyConverter', () => {
       vi.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('Network error'));
       const uf = await getUfValue();
       expect(uf).toBeNull();
+    });
+
+    it('falls back to stale cache if fetch fails', async () => {
+      // Seed stale cache (> 24 hours ago)
+      const staleTimestamp = Date.now() - 48 * 60 * 60 * 1000;
+      localStorage.setItem(
+        'uf_rate_mindicador',
+        JSON.stringify({ data: 39500, timestamp: staleTimestamp }),
+      );
+
+      vi.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('502 Bad Gateway'));
+      const uf = await getUfValue();
+      expect(uf).toBe(39500);
     });
   });
 

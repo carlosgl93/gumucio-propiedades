@@ -18,29 +18,60 @@ interface CachedData<T> {
 const CACHE_KEY_RATES = 'currency_exchange_rates';
 const CACHE_KEY_UF = 'uf_rate_mindicador';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const FETCH_TIMEOUT_MS = 2500; // 2.5s timeout to prevent hanging on external API outages
 const BASE_CURRENCY = 'USD';
 
 /**
- * Fetch UF value directly from mindicador.cl (CLP value of 1 UF)
+ * Fetch helper with timeout
  */
-export async function getUfValue(): Promise<number | null> {
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs = FETCH_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Read cached UF from localStorage, returning value and freshness
+ */
+function readCachedUf(): { data: number | null; isFresh: boolean } {
   try {
     const cached = localStorage.getItem(CACHE_KEY_UF);
     if (cached) {
       const { data, timestamp }: CachedData<number> = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_DURATION && typeof data === 'number' && data > 0) {
-        return data;
+      if (typeof data === 'number' && data > 0) {
+        const isFresh = Date.now() - timestamp < CACHE_DURATION;
+        return { data, isFresh };
       }
     }
   } catch (error) {
     console.error('Error reading cached UF rate:', error);
   }
+  return { data: null, isFresh: false };
+}
+
+/**
+ * Fetch UF value directly from mindicador.cl (CLP value of 1 UF)
+ * Falls back to stale cache or null on timeout/error.
+ */
+export async function getUfValue(): Promise<number | null> {
+  const cached = readCachedUf();
+  if (cached.data !== null && cached.isFresh) {
+    return cached.data;
+  }
 
   try {
-    const response = await fetch('https://mindicador.cl/api/uf');
+    const response = await fetchWithTimeout('https://mindicador.cl/api/uf');
     if (!response.ok) {
-      console.error('Failed to fetch UF rate from mindicador:', response.statusText);
-      return null;
+      console.warn('Failed to fetch UF rate from mindicador:', response.statusText);
+      return cached.data; // Fallback to stale cache if available
     }
 
     const json = await response.json();
@@ -57,10 +88,10 @@ export async function getUfValue(): Promise<number | null> {
       }
       return valor;
     }
-    return null;
+    return cached.data;
   } catch (error) {
-    console.error('Error fetching UF rate:', error);
-    return null;
+    console.warn('Error fetching UF rate (timeout or network):', error);
+    return cached.data; // Fallback to stale cache or null
   }
 }
 
@@ -69,7 +100,9 @@ export async function getUfValue(): Promise<number | null> {
  */
 async function fetchExchangeRates(): Promise<ExchangeRates | null> {
   try {
-    const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${BASE_CURRENCY}`);
+    const response = await fetchWithTimeout(
+      `https://api.exchangerate-api.com/v4/latest/${BASE_CURRENCY}`,
+    );
     if (!response.ok) {
       console.error('Failed to fetch exchange rates:', response.statusText);
       return null;
