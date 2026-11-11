@@ -68,7 +68,12 @@ export const DocumentUploader = ({
   return (
     <Stack spacing={2}>
       <Typography variant="subtitle1">
-        Subir {type === 'dicom' ? 'DICOM' : 'Liquidación de sueldo'}
+        Subir{' '}
+        {type === 'dicom'
+          ? 'DICOM'
+          : type === 'liquidacion'
+            ? 'Liquidación de sueldo'
+            : 'Carpeta Tributaria'}
       </Typography>
       <Button variant="outlined" component="label" disabled={busy}>
         {busy ? <CircularProgress size={20} /> : 'Seleccionar PDF'}

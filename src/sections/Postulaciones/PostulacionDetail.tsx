@@ -73,6 +73,14 @@ export const PostulacionDetail = ({ postulacion, uploadedBy, onBack }: Props) =>
           uploadedBy={uploadedBy}
           type="liquidacion"
         />
+        <DocumentUploader
+          postulacionId={postulacion.id}
+          applicantName={postulacion.applicantName}
+          applicantRut={postulacion.applicantRut}
+          monthlyRent={postulacion.monthlyRent}
+          uploadedBy={uploadedBy}
+          type="carpeta_tributaria"
+        />
       </Stack>
 
       {docs && docs.length > 0 && (

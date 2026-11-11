@@ -11,7 +11,11 @@ const minimaxApiKey = defineSecret('GEMINI_API_KEY');
 import { extract, type Extracted } from './extractors';
 import type { ApplicantContext, DocType } from './extractors/types';
 import { elaRegional } from './ela';
-import { crossCheckForDicom, crossCheckForLiquidacion } from './rules/crossCheck';
+import {
+  crossCheckForDicom,
+  crossCheckForLiquidacion,
+  crossCheckForCarpetaTributaria,
+} from './rules/crossCheck';
 import { llmEvaluate } from './rules/llmEval';
 import { buildLlmPrompt } from './rules/llmPrompt';
 import { score } from './rules/score';
@@ -35,10 +39,17 @@ function crossCheckFor(
   type: DocType,
   extracted: Extracted,
   applicant: ApplicantContext,
+  fullText?: string,
 ): CrossResult {
   if (type === 'dicom') {
     return {
       crossCheckFlags: crossCheckForDicom(extracted as never, applicant),
+      employerFormatFlags: [],
+    };
+  }
+  if (type === 'carpeta_tributaria') {
+    return {
+      crossCheckFlags: crossCheckForCarpetaTributaria(extracted as never, applicant, fullText),
       employerFormatFlags: [],
     };
   }
@@ -69,7 +80,7 @@ export const verifyDocumentHandler = async (req: Request, res: Response): Promis
     const file = (req as Request & { file?: Express.Multer.File }).file;
     const { type, applicantName, applicantRut, monthlyRent } = req.body as Record<string, string>;
 
-    if (!type || !['dicom', 'liquidacion'].includes(type)) {
+    if (!type || !['dicom', 'liquidacion', 'carpeta_tributaria'].includes(type)) {
       res.status(400).json({ error: 'Missing or invalid type' });
       return;
     }
@@ -151,7 +162,7 @@ export const verifyDocumentHandler = async (req: Request, res: Response): Promis
     const extractedRaw = extract(text, docType);
     const extracted = { type: docType, ...extractedRaw } as Extracted & { type: DocType };
 
-    const crossResult = crossCheckFor(docType, extractedRaw, applicant);
+    const crossResult = crossCheckFor(docType, extractedRaw, applicant, text);
 
     const prompt = buildLlmPrompt(extracted as unknown as Record<string, unknown>, applicant, docType, pngBuf);
     let llm: Awaited<ReturnType<typeof llmEvaluate>>;

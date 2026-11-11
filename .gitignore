@@ -34,5 +34,6 @@ dist
 .gstack/
 .claude/
 test-files/
+docs/*.pdf
 test-final2.mjs
 backups/

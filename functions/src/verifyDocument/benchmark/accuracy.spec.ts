@@ -1,16 +1,26 @@
 // functions/src/verifyDocument/benchmark/accuracy.spec.ts
 import { describe, it, expect } from 'vitest';
 import { score } from '../rules/score';
-import { crossCheckForDicom, crossCheckForLiquidacion } from '../rules/crossCheck';
+import {
+  crossCheckForDicom,
+  crossCheckForLiquidacion,
+  crossCheckForCarpetaTributaria,
+} from '../rules/crossCheck';
 import { extract } from '../extractors';
-import type { ApplicantContext, ExtractedDicom, ExtractedLiquidacion } from '../extractors/types';
+import type {
+  ApplicantContext,
+  ExtractedDicom,
+  ExtractedLiquidacion,
+  ExtractedCarpetaTributaria,
+  DocType,
+} from '../extractors/types';
 
 interface BenchmarkCase {
   id: string;
   category: 'authentic' | 'counterfeit_identity' | 'counterfeit_rut' | 'counterfeit_tampered';
   expectedVerdict: 'pass' | 'warn' | 'fail';
   rawText: string;
-  docType: 'dicom' | 'liquidacion';
+  docType: DocType;
   applicant: ApplicantContext;
   ela: { global: number; maxCell: number };
   llm: { score: number; flags: string[]; confidence: number } | null;
@@ -50,7 +60,23 @@ Liquido a pagar: 1.200.000`,
     ela: { global: 0.08, maxCell: 0.22 },
     llm: { score: 14, flags: [], confidence: 0.92 },
   },
-  // 3. Fraude: RUT en documento pertenece a otra persona (suplantación)
+  // 3. Legítimo Carpeta Tributaria SII
+  {
+    id: 'LEGIT-03-CARPETA-TRIBUTARIA',
+    category: 'authentic',
+    expectedVerdict: 'pass',
+    docType: 'carpeta_tributaria',
+    applicant: { applicantName: 'DOÑA ISIDORA SPA', applicantRut: '78.093.438-7', monthlyRent: 800000 },
+    rawText: `CARPETA TRIBUTARIA REGULAR
+Nombre del Emisor: DOÑA ISIDORA SPA
+RUT del Emisor: 78093438-7
+Fecha de generación de la Carpeta: 27/10/2026 11:13
+Categoría Tributaria: Primera Categoría
+Declaración Mensual y Pago Simultáneo de Impuestos`,
+    ela: { global: 0.06, maxCell: 0.11 },
+    llm: { score: 15, flags: [], confidence: 0.95 },
+  },
+  // 4. Fraude: RUT en documento pertenece a otra persona (suplantación)
   {
     id: 'FRAUD-01-IDENTITY-MISMATCH',
     category: 'counterfeit_identity',
@@ -65,7 +91,7 @@ Resumen de Protestos: 0`,
     ela: { global: 0.05, maxCell: 0.09 },
     llm: { score: 15, flags: [], confidence: 0.95 },
   },
-  // 4. Fraude: RUT inventado con dígito verificador inválido
+  // 5. Fraude: RUT inventado con dígito verificador inválido
   {
     id: 'FRAUD-02-INVALID-RUT',
     category: 'counterfeit_rut',
@@ -80,7 +106,7 @@ Resumen de Protestos: 0`,
     ela: { global: 0.05, maxCell: 0.10 },
     llm: { score: 12, flags: ['rut_checksum_invalid'], confidence: 0.9 },
   },
-  // 5. Fraude: Adulteración visual por parche/Photoshop (ELA disparado)
+  // 6. Fraude: Adulteración visual por parche/Photoshop (ELA disparado)
   {
     id: 'FRAUD-03-TAMPERED-ELA',
     category: 'counterfeit_tampered',
@@ -110,8 +136,26 @@ describe('Pipeline Accuracy & Confusion Matrix Benchmark', () => {
       const extractedRaw = extract(testCase.rawText, testCase.docType);
       const crossResult =
         testCase.docType === 'dicom'
-          ? { crossCheckFlags: crossCheckForDicom(extractedRaw as ExtractedDicom, testCase.applicant), employerFormatFlags: [] }
-          : crossCheckForLiquidacion(extractedRaw as ExtractedLiquidacion, testCase.applicant);
+          ? {
+              crossCheckFlags: crossCheckForDicom(
+                extractedRaw as ExtractedDicom,
+                testCase.applicant,
+              ),
+              employerFormatFlags: [],
+            }
+          : testCase.docType === 'carpeta_tributaria'
+            ? {
+                crossCheckFlags: crossCheckForCarpetaTributaria(
+                  extractedRaw as ExtractedCarpetaTributaria,
+                  testCase.applicant,
+                  testCase.rawText,
+                ),
+                employerFormatFlags: [],
+              }
+            : crossCheckForLiquidacion(
+                extractedRaw as ExtractedLiquidacion,
+                testCase.applicant,
+              );
 
       const res = score({
         extracted: { type: testCase.docType, ...extractedRaw },

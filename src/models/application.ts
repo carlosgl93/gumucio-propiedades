@@ -1,7 +1,7 @@
 // src/models/application.ts
 import type { Timestamp } from 'firebase/firestore';
 
-export type DocType = 'dicom' | 'liquidacion';
+export type DocType = 'dicom' | 'liquidacion' | 'carpeta_tributaria';
 export type Verdict = 'pass' | 'warn' | 'fail';
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'needs_more_docs';
 

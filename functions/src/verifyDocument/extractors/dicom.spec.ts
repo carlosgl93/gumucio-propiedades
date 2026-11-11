@@ -26,4 +26,57 @@ describe('extractDicom', () => {
     const r = extractDicom(fx('dicom-bad-rut.txt'));
     expect(r.rut).toBeNull();
   });
+
+  it('extracts Informes Comerciales Platino personal report correctly', () => {
+    const platinoText = `✓ informescomerciales 	PLATINO-D
+platino-d
+RUT Titular · 13.563.683-5
+Informe	27/10/2026
+QUILILONGO QUINONES OLGA
+JOSELYNE
+11:43:29
+Riesgo bajo · puntaje 999/999
+Sin protestos ni morosidades ni señales de riesgo relevantes en el período consultado.
+Información Personal
+Nacionalidad:
+Chilena
+Activos
+✓ Sin activos: se consultó el registro y no se encontraron vehículos ni propiedades a nombre del titular.`;
+    const r = extractDicom(platinoText);
+    expect(r.rut).toBe('13563683-5');
+    expect(r.name).toBe('QUILILONGO QUINONES OLGA JOSELYNE');
+    expect(r.fechaEmision).toBe('2026-10-27');
+    expect(r.protestos).toBe(0);
+  });
+
+  it('extracts Informes Comerciales Platino Empresa report correctly', () => {
+    const platinoEmpresaText = `✓ informescomerciales 	PLATINO-EMPRESA
+platino-empresa
+RUT Titular · 78.093.438-7
+Informe	27/10/2026
+DONA ISIDORA SPA
+11:05:15
+Riesgo bajo · puntaje 999/999
+Sin protestos ni morosidades ni señales de riesgo relevantes en el período consultado.
+Información Personal
+Razón social:
+DONA ISIDORA SPA
+Giro:
+VENTA AL POR MENOR
+Activos
+✓ Sin activos: se consultó el registro y no se encontraron vehículos ni propiedades a nombre del titular.`;
+    const r = extractDicom(platinoEmpresaText);
+    expect(r.rut).toBe('78093438-7');
+    expect(r.name).toBe('DONA ISIDORA SPA');
+    expect(r.fechaEmision).toBe('2026-10-27');
+    expect(r.protestos).toBe(0);
+  });
+
+  it('does not capture "del titular" from "a nombre del titular" as applicant name', () => {
+    const textWithTitular = `RUT Titular · 15.345.678-K
+Informe 10/10/2026
+Sin activos: a nombre del titular.`;
+    const r = extractDicom(textWithTitular);
+    expect(r.name).not.toBe('del titular');
+  });
 });

@@ -58,7 +58,11 @@ export function score(input: ScoreInput): VerificationResult {
   // 3) Fields present
   const typeStr = String(input.extracted.type ?? '');
   const requiredFields =
-    typeStr === 'liquidacion' ? ['rut', 'grossIncome', 'netIncome'] : ['rut', 'name'];
+    typeStr === 'liquidacion'
+      ? ['rut', 'grossIncome', 'netIncome']
+      : typeStr === 'carpeta_tributaria'
+        ? ['rut', 'name', 'fechaEmision']
+        : ['rut', 'name'];
   const missingKeys = requiredFields.filter(f => {
     const v = (input.extracted as Record<string, unknown>)[f];
     return v === null || v === undefined || v === '';

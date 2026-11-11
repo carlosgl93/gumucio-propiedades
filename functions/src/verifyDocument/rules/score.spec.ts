@@ -13,7 +13,7 @@ const badEla = { global: 0.05, maxCell: 0.20 };
 describe('score', () => {
   it('returns pass (>=90) when all checks succeed and LLM works', () => {
     const r = score({
-      extracted: { rut: '12345678-5', type: 'dicom' },
+      extracted: { rut: '12345678-5', name: 'JUAN PEREZ', type: 'dicom' },
       ela: goodEla,
       crossCheckFlags: [],
       employerFormatFlags: [],
@@ -26,9 +26,28 @@ describe('score', () => {
     expect(r.llmUnavailable).toBe(false);
   });
 
+  it('evaluates carpeta_tributaria correctly with pass verdict', () => {
+    const r = score({
+      extracted: {
+        rut: '12345678-5',
+        name: 'JUAN PEREZ',
+        fechaEmision: '2026-10-20',
+        type: 'carpeta_tributaria',
+      },
+      ela: goodEla,
+      crossCheckFlags: [],
+      employerFormatFlags: [],
+      llm: { score: 15, flags: [], confidence: 0.95 },
+      monthlyRent: 500000,
+      applicant: baseApplicant,
+    });
+    expect(r.verdict).toBe('pass');
+    expect(r.score).toBeGreaterThanOrEqual(90);
+  });
+
   it('re-normalizes to 100 when LLM unavailable, still produces verdict', () => {
     const r = score({
-      extracted: { rut: '12345678-5', type: 'dicom' },
+      extracted: { rut: '12345678-5', name: 'JUAN PEREZ', type: 'dicom' },
       ela: goodEla,
       crossCheckFlags: [],
       employerFormatFlags: [],
@@ -43,7 +62,7 @@ describe('score', () => {
 
   it('returns fail (<70) when identity cross-check fails', () => {
     const r = score({
-      extracted: { rut: '99999999-9', type: 'dicom' },
+      extracted: { rut: '99999999-9', name: 'OTRO', type: 'dicom' },
       ela: goodEla,
       crossCheckFlags: [{ code: 'identity_mismatch', weight: 20, message: 'x' }],
       employerFormatFlags: [],
@@ -56,7 +75,7 @@ describe('score', () => {
 
   it('returns fail (<70) when ELA regional fires AND cross-check fires', () => {
     const r = score({
-      extracted: { rut: '99999999-9', type: 'dicom' },
+      extracted: { rut: '99999999-9', name: 'OTRO', type: 'dicom' },
       ela: badEla,
       crossCheckFlags: [{ code: 'identity_mismatch', weight: 20, message: 'x' }],
       employerFormatFlags: [],
@@ -70,7 +89,7 @@ describe('score', () => {
 
   it('emits income_below_threshold flag when liquid net income < rent/0.3', () => {
     const r = score({
-      extracted: { netIncome: 100000, type: 'liquidacion' },
+      extracted: { rut: '12345678-5', grossIncome: 100000, netIncome: 100000, type: 'liquidacion' },
       ela: goodEla,
       crossCheckFlags: [],
       employerFormatFlags: [],
@@ -78,6 +97,6 @@ describe('score', () => {
       monthlyRent: 500000,
       applicant: baseApplicant,
     });
-    expect(r.flags.some(f => f.code === 'income_below_threshold')).toBe(true);
+    expect(r.flags.some((f) => f.code === 'income_below_threshold')).toBe(true);
   });
 });

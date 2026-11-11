@@ -8,7 +8,7 @@ const applicant = {
 };
 
 describe('buildLlmPrompt', () => {
-  it('returns prompt text and base64 image', () => {
+  it('returns prompt text and base64 image for dicom', () => {
     const r = buildLlmPrompt(
       { rut: '12345678-5', name: 'JUAN PEREZ' },
       applicant,
@@ -17,6 +17,7 @@ describe('buildLlmPrompt', () => {
     );
     expect(r.text).toContain('DICOM');
     expect(r.text).toContain('JUAN PEREZ');
+    expect(r.text).toContain('November 2026');
     expect(r.imageBase64).toBeTruthy();
     expect(r.imageBase64).toMatch(/^[A-Za-z0-9+/=]+$/);
   });
@@ -30,5 +31,16 @@ describe('buildLlmPrompt', () => {
     );
     expect(r.text).toContain('LIQUIDACION');
     expect(r.text).toContain('1500000');
+  });
+
+  it('mentions carpeta tributaria type in prompt when type=carpeta_tributaria', () => {
+    const r = buildLlmPrompt(
+      { rut: '78093438-7', name: 'DOÑA ISIDORA SPA', declaracionesF29Count: 21 },
+      applicant,
+      'carpeta_tributaria',
+      Buffer.from([1, 2, 3]),
+    );
+    expect(r.text).toContain('CARPETA TRIBUTARIA');
+    expect(r.text).toContain('78093438-7');
   });
 });
