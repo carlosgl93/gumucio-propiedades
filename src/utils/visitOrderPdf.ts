@@ -71,6 +71,7 @@ const getPropertyTypeLabel = (property: Property): string => {
 export const generateVisitOrderPDF = async (
   property: Property,
   visitData: VisitOrderData,
+  options?: { customUfValue?: number | null },
 ): Promise<void> => {
   const doc = new jsPDF();
   const currentDate = new Date();
@@ -177,6 +178,7 @@ export const generateVisitOrderPDF = async (
     property.price || 0,
     property.currency || 'CLP',
     'UF', // Convert to UF
+    options?.customUfValue,
   );
   const priceLines = doc.splitTextToSize(priceText, 130);
   doc.text(priceLines, detailsX, detailsY);

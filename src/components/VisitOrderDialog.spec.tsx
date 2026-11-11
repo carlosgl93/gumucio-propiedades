@@ -11,6 +11,10 @@ vi.mock('@/utils/visitOrderPdf', () => ({
   generateVisitOrderPDF: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('@/utils/currencyConverter', () => ({
+  getUfValue: vi.fn().mockResolvedValue(39000),
+}));
+
 const mockProperty: Property = {
   id: 'prop-1234567890',
   title: 'Casa Quinta Machalí',
@@ -72,9 +76,11 @@ describe('VisitOrderDialog', () => {
     await user.click(submitBtn);
 
     await waitFor(() => {
-      expect(generateVisitOrderPDF).toHaveBeenCalledWith(mockProperty, {
-        visitorName: 'Carlos Perez',
-      });
+      expect(generateVisitOrderPDF).toHaveBeenCalledWith(
+        mockProperty,
+        { visitorName: 'Carlos Perez' },
+        expect.any(Object),
+      );
       expect(handleClose).toHaveBeenCalledTimes(1);
     });
   });

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 
 import {
+  Autocomplete,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  MenuItem,
   Stack,
   TextField,
 } from '@mui/material';
@@ -15,6 +15,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useProperties } from '@/hooks/useProperties';
 import { createApplication } from '@/services/application';
+import { formatPrice } from '@/utils/formatters';
 
 interface Props {
   open: boolean;
@@ -28,7 +29,8 @@ export const PostulacionForm = ({ open, onClose }: Props) => {
   const [applicantName, setApplicantName] = useState('');
   const [applicantRut, setApplicantRut] = useState('');
 
-  const monthlyRent = properties?.find((p) => p.id === propertyId)?.price ?? 0;
+  const selectedProperty = properties.find((p) => p.id === propertyId);
+  const monthlyRent = selectedProperty?.price ?? 0;
 
   const create = useMutation({
     mutationFn: createApplication,
@@ -46,19 +48,24 @@ export const PostulacionForm = ({ open, onClose }: Props) => {
       <DialogTitle>Nueva postulación</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
-          <TextField
-            select
-            label="Propiedad"
-            value={propertyId}
-            onChange={(e) => setPropertyId(e.target.value)}
-            fullWidth
-          >
-            {properties?.map((p) => (
-              <MenuItem key={p.id} value={p.id}>
-                {p.title}
-              </MenuItem>
-            ))}
-          </TextField>
+          <Autocomplete
+            options={properties}
+            getOptionLabel={(option) =>
+              `${option.title} (${option.address?.commune || 'Sin comuna'}) - ${formatPrice(option.price, option.currency)}`
+            }
+            value={selectedProperty || null}
+            onChange={(_, newValue) => setPropertyId(newValue ? newValue.id : '')}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Propiedad"
+                placeholder="Buscar por título, comuna o precio..."
+                fullWidth
+              />
+            )}
+            noOptionsText="No se encontraron propiedades"
+          />
           <TextField
             label="Renta objetivo (CLP)"
             value={monthlyRent}

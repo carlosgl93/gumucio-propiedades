@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Description } from '@mui/icons-material';
 import {
@@ -9,10 +9,13 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Stack,
   TextField,
+  Typography,
 } from '@mui/material';
 
 import { Property } from '@/models';
+import { getUfValue } from '@/utils/currencyConverter';
 import { generateVisitOrderPDF } from '@/utils/visitOrderPdf';
 
 interface VisitOrderDialogProps {
@@ -25,6 +28,22 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
   const [visitorName, setVisitorName] = useState('');
   const [error, setError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [ufUnavailable, setUfUnavailable] = useState(false);
+  const [manualUf, setManualUf] = useState('');
+  const [ignoreUf, setIgnoreUf] = useState(false);
+
+  useEffect(() => {
+    if (!open || !property) return;
+    setVisitorName('');
+    setError('');
+    setManualUf('');
+    setIgnoreUf(false);
+
+    // Check UF availability if property price is in CLP or UF
+    getUfValue().then((rate) => {
+      setUfUnavailable(rate === null);
+    });
+  }, [open, property]);
 
   const validateForm = (): boolean => {
     if (!visitorName.trim()) {
@@ -40,12 +59,18 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
 
     setIsGenerating(true);
     try {
-      await generateVisitOrderPDF(property, { visitorName: visitorName.trim() });
-      // Reset form after successful generation
+      let customUfValue: number | null | undefined = undefined;
+      if (ignoreUf) {
+        customUfValue = null;
+      } else if (manualUf && parseFloat(manualUf) > 0) {
+        customUfValue = parseFloat(manualUf);
+      }
+
+      await generateVisitOrderPDF(property, { visitorName: visitorName.trim() }, { customUfValue });
       setVisitorName('');
       onClose();
-    } catch (error) {
-      console.error('Error generating PDF:', error);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
       setError('Error al generar el PDF. Por favor intente nuevamente.');
     } finally {
       setIsGenerating(false);
@@ -96,6 +121,46 @@ export const VisitOrderDialog = ({ open, property, onClose }: VisitOrderDialogPr
           disabled={isGenerating}
           placeholder="Ej: Juan Pérez González"
         />
+
+        {ufUnavailable && !ignoreUf && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+              No se pudo obtener el valor actual de la UF automáticamente.
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 1.5 }}>
+              Puede ingresar el valor actual de la UF en CLP o ignorar la conversión para emitir el
+              PDF solo con el precio original de la propiedad.
+            </Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <TextField
+                size="small"
+                label="Valor UF (CLP)"
+                type="number"
+                placeholder="Ej: 38500"
+                value={manualUf}
+                onChange={(e) => setManualUf(e.target.value)}
+                sx={{ bgcolor: 'background.paper', width: 180 }}
+              />
+              <Button size="small" variant="outlined" onClick={() => setIgnoreUf(true)}>
+                Ignorar UF
+              </Button>
+            </Stack>
+          </Alert>
+        )}
+
+        {ignoreUf && (
+          <Alert
+            severity="info"
+            sx={{ mt: 2 }}
+            action={
+              <Button color="inherit" size="small" onClick={() => setIgnoreUf(false)}>
+                Ingresar UF
+              </Button>
+            }
+          >
+            Se generará el PDF con el precio original sin conversión a UF.
+          </Alert>
+        )}
 
         {error && (
           <Alert severity="error" sx={{ mt: 2 }}>

@@ -154,19 +154,25 @@ export async function convertCurrency(
   amount: number,
   fromCurrency: string,
   toCurrency: string,
+  customUfValue?: number | null,
 ): Promise<number | null> {
   if (fromCurrency === toCurrency) {
     return amount;
   }
 
-  // Direct CLP <-> UF conversions via mindicador.cl
+  // Explicitly ignore UF conversion
+  if (customUfValue === null && (fromCurrency === 'UF' || toCurrency === 'UF')) {
+    return null;
+  }
+
+  // Direct CLP <-> UF conversions
   if (fromCurrency === 'CLP' && toCurrency === 'UF') {
-    const ufValue = await getUfValue();
+    const ufValue = customUfValue && customUfValue > 0 ? customUfValue : await getUfValue();
     return ufValue ? amount / ufValue : null;
   }
 
   if (fromCurrency === 'UF' && toCurrency === 'CLP') {
-    const ufValue = await getUfValue();
+    const ufValue = customUfValue && customUfValue > 0 ? customUfValue : await getUfValue();
     return ufValue ? amount * ufValue : null;
   }
 
@@ -197,6 +203,7 @@ export async function formatPriceWithConversion(
   amount: number,
   currency: string,
   targetCurrency: string = 'UF',
+  customUfValue?: number | null,
 ): Promise<string> {
   const formattedPrice = formatPrice(amount, currency);
 
@@ -204,7 +211,7 @@ export async function formatPriceWithConversion(
     return formattedPrice;
   }
 
-  const converted = await convertCurrency(amount, currency, targetCurrency);
+  const converted = await convertCurrency(amount, currency, targetCurrency, customUfValue);
   if (converted !== null) {
     const convertedFormatted = formatPrice(converted, targetCurrency);
     return `${formattedPrice} (${convertedFormatted})`;
