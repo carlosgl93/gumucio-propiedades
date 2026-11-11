@@ -20,5 +20,6 @@ app.use(express.json());
 
 app.post('/newDiaryEntry', newDiaryEntry);
 app.post('/verifyDocument', upload.single('file'), verifyDocumentHandler);
+app.post('/api/verifyDocument', upload.single('file'), verifyDocumentHandler);
 
 export const api = functions.runWith({ secrets: [minimaxApiKey] }).https.onRequest(app);

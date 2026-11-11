@@ -472,7 +472,7 @@ export const AdminDashboard = () => {
                             </TableCell>
                             <TableCell>{property.address.city}</TableCell>
                             <TableCell>
-                              {property.featured ? (
+                              {property.isFeatured ? (
                                 <Star color="warning" fontSize="small" />
                               ) : (
                                 <Typography variant="caption" color="text.secondary">
@@ -482,8 +482,8 @@ export const AdminDashboard = () => {
                             </TableCell>
                             <TableCell>
                               <Chip
-                                label={property.active ? 'Activa' : 'Inactiva'}
-                                color={property.active ? 'success' : 'default'}
+                                label={property.isActive ? 'Activa' : 'Inactiva'}
+                                color={property.isActive ? 'success' : 'default'}
                                 size="small"
                                 variant="outlined"
                               />

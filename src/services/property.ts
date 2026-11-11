@@ -73,7 +73,7 @@ export class PropertyService {
       (key) => updateData[key] === undefined && delete updateData[key],
     );
 
-    await updateDoc(docRef, updateData);
+    await updateDoc(docRef, updateData as never);
   }
 
   async deleteProperty(id: string): Promise<void> {
