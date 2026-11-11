@@ -54,7 +54,7 @@ export const PostulacionForm = ({ open, onClose }: Props) => {
               `${option.title} (${option.address?.commune || 'Sin comuna'}) - ${formatPrice(option.price, option.currency)}`
             }
             value={selectedProperty || null}
-            onChange={(_, newValue) => setPropertyId(newValue ? newValue.id : '')}
+            onChange={(_, newValue) => setPropertyId(newValue?.id || '')}
             isOptionEqualToValue={(option, value) => option.id === value.id}
             renderInput={(params) => (
               <TextField
