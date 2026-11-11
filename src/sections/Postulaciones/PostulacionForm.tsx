@@ -11,10 +11,10 @@ import {
   TextField,
 } from '@mui/material';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { useProperties } from '@/hooks/useProperties';
 import { createApplication } from '@/services/application';
-import { propertyService } from '@/services/property';
 
 interface Props {
   open: boolean;
@@ -23,10 +23,7 @@ interface Props {
 
 export const PostulacionForm = ({ open, onClose }: Props) => {
   const qc = useQueryClient();
-  const { data: properties } = useQuery({
-    queryKey: ['properties'],
-    queryFn: () => propertyService.getAllProperties({ isActive: true }),
-  });
+  const { data: properties = [] } = useProperties({ visibility: 'admin' });
   const [propertyId, setPropertyId] = useState('');
   const [applicantName, setApplicantName] = useState('');
   const [applicantRut, setApplicantRut] = useState('');
